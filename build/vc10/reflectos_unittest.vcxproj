@@ -23,7 +23,7 @@
     <ClCompile Include="..\..\tests\abstract_tests.cpp" />
     <ClCompile Include="..\..\tests\function_tests.cpp" />
     <ClCompile Include="..\..\tests\main.cpp" />
-    <ClCompile Include="..\..\tests\all_tests.cpp" />
+    <ClCompile Include="..\..\tests\registry_tests.cpp" />
     <ClCompile Include="..\..\tests\simple_tests.cpp" />
     <ClCompile Include="..\..\tests\virtual_tests.cpp" />
   </ItemGroup>

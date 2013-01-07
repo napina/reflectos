@@ -18,9 +18,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\tests\main.cpp" />
-    <ClCompile Include="..\..\tests\all_tests.cpp">
-      <Filter>tests</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\tests\virtual_tests.cpp">
       <Filter>tests</Filter>
     </ClCompile>
@@ -31,6 +28,9 @@
       <Filter>tests</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tests\function_tests.cpp">
+      <Filter>tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tests\registry_tests.cpp">
       <Filter>tests</Filter>
     </ClCompile>
   </ItemGroup>

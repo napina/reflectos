@@ -45,11 +45,12 @@ struct FunctionInfo;
 namespace internal {
     template<typename T,typename Base,bool IsClass> struct TypeStorage;
     template<typename T> struct type_inspect_base;
+    template<typename T> struct RegistryImpl;
 }
+typedef internal::RegistryImpl<void> Registry;
 typedef unsigned int uint32;
 //-----------------------------------------------------------------------------
 
-#define REFLECTOS_INIT()                    REFLECTOS_INIT()
 #define REFLECT_CLASS(NAME)                 REFLECT_CLASS_(NAME)
 #define REFLECT_VIRTUAL_CLASS(NAME,BASE)    REFLECT_VIRTUAL_CLASS_(NAME,BASE)
 #define REFLECT_FIELD(NAME)                 REFLECT_FIELD_(NAME)
@@ -89,6 +90,9 @@ struct TypeInfo
     virtual FunctionInfo const* getFirstFunction() const = 0;
 
 protected:
+    friend Registry;
+    virtual void init() = 0;
+
     uint32 m_id;
     uint32 m_flags;
     size_t m_size;
@@ -252,7 +256,14 @@ struct RegistryImpl
         return nullptr;
     }
 
-    static void* init
+    static void init()
+    {
+        TypeInfo* c = s_typeList;
+        while(c != nullptr) {
+            c->init();
+            c = const_cast<TypeInfo*>(c->next());
+        }
+    }
 };
 
 template<typename T>
@@ -368,6 +379,9 @@ struct TypeInfoImpl : public TypeInfo
     virtual FunctionInfo const* getFirstFunction() const            { return nullptr; }
     virtual FunctionInfo const* getFunction(uint32 id) const        { return nullptr; }
     virtual FunctionInfo const* getFunction(const char* name) const { return nullptr; }
+
+protected:
+    virtual void init() {}
 };
 //-----------------------------------------------------------------------------
 
@@ -449,10 +463,18 @@ struct ClassInfoImpl : public TypeInfo
     }
 
     template<typename T,typename funcptr_t,funcptr_t Function>
-    void visitFunction(const char* name, T const*) {
+    void visitFunction(const char* name, T const*)
+    {
         typedef reflectos::member_function_inspect<T,funcptr_t> Inspection;
         auto funcPtr = &(FunctionPtr<Inspection::Type>::ptr<T,funcptr_t,Function>);
         static FunctionInfoImpl info(name, FunctionInfo::PtrType(funcPtr), &m_firstFunction);
+    }
+
+protected:
+    void init()
+    {
+        //m_base = Registry::getType(type_inspect<T>::base::id());
+        T::reflect(this, nullptr);
     }
 
 private:

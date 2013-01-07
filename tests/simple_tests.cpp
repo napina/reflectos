@@ -27,19 +27,6 @@ private:
 REGISTER_CLASS(SimpleClass)
 //----------------------------------------------------------------------------
 
-class Fixture : public unitos::SuiteTest
-{
-public:
-    Fixture() : unitos::SuiteTest()
-    {
-        SimpleClass::reflect((r::internal::ClassInfoImpl<SimpleClass>*)r::inspect("SimpleClass"), nullptr);
-    }
-
-    virtual ~Fixture() {}
-};
-
-//----------------------------------------------------------------------------
-
 REGISTER_TYPE(int)
 
 TEST_SUITE(Simple)
@@ -94,7 +81,7 @@ TEST_SUITE(Simple)
         r::inspect("SimpleClass")->destroyInPlace(ptr);
     }
 
-    TEST_FIXTURE(Fixture,CallGetData)
+    TEST(CallGetData)
     {
         SimpleClass c;
         c.setData(98);
@@ -102,19 +89,14 @@ TEST_SUITE(Simple)
         EXPECT_VALID(info);
         int value = info->call0<int>(&c);
         EXPECT_EQUAL(value, 98);
-
-        info = r::inspect("SimpleClass")->getFunction("one");
-        EXPECT_VALID(info);
-        value = info->call0<int>(&c);
-        EXPECT_EQUAL(value, 1);
     }
 
-	/*TEST_FIXTURE(Fixture,CallOne)
+    TEST(CallOne)
     {
         SimpleClass c;
         r::FunctionInfo const*info = r::inspect("SimpleClass")->getFunction("one");
         EXPECT_VALID(info);
         int value = info->call0<int>(&c);
         EXPECT_EQUAL(value, 1);
-    }*/
+    }
 }

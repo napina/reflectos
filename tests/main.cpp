@@ -19,7 +19,7 @@ public:
 
 int main(int argc, char *argv[])
 {
-    REFLECTOS_INIT();
+    reflectos::Registry::init();
 
 #if defined(__UNITOS_WIN32__) && !(NDEBUG)
     _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF | _CRTDBG_CHECK_ALWAYS_DF);
