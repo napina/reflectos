@@ -2,12 +2,30 @@
 *.slo
 *.lo
 *.o
+*.obj
 
 # Compiled Dynamic libraries
 *.so
 *.dylib
 
 # Compiled Static libraries
+*.lib
+*.dll
 *.lai
 *.la
 *.a
+
+# Visual Studio files
+*.sdf
+*.suo
+*.user
+*.ipch
+*.tlog
+*.pdb
+*.log
+*.lastbuildstate
+*.exe
+*.ilk
+*.cache
+*.idb
+*.manifest

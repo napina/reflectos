@@ -44,12 +44,13 @@ struct FunctionInfo;
 
 namespace internal {
     template<typename T,typename Base,bool IsClass> struct TypeStorage;
-	template<typename T> struct type_inspect_base;
+    template<typename T> struct type_inspect_base;
 }
 typedef unsigned int uint32;
 //-----------------------------------------------------------------------------
 
-#define REFLECT_CLASS(NAME)				    REFLECT_CLASS_(NAME)
+#define REFLECTOS_INIT()                    REFLECTOS_INIT()
+#define REFLECT_CLASS(NAME)                 REFLECT_CLASS_(NAME)
 #define REFLECT_VIRTUAL_CLASS(NAME,BASE)    REFLECT_VIRTUAL_CLASS_(NAME,BASE)
 #define REFLECT_FIELD(NAME)                 REFLECT_FIELD_(NAME)
 #define REFLECT_FUNCTION(NAME)              REFLECT_FUNCTION_(NAME)
@@ -228,8 +229,8 @@ struct empty {};
 template<typename T>
 struct type_inspect_base
 {
-	template<typename I> struct has { typedef type_inspect<typename I::base_t> base; };
-	template<typename I> static has<I> test(typename I::base_t* a = nullptr);
+    template<typename I> struct has { typedef type_inspect<typename I::base_t> base; };
+    template<typename I> static has<I> test(typename I::base_t* a = nullptr);
     template<typename> static empty test(...);
     typedef decltype(test<T>()) type;
 };
@@ -250,6 +251,8 @@ struct RegistryImpl
         }
         return nullptr;
     }
+
+    static void* init
 };
 
 template<typename T>
@@ -482,7 +485,7 @@ struct TypeStorage<T,Base,true> : public Base
             typedef NAME ThisType;
 #define REFLECT_VIRTUAL_CLASS_(NAME,BASE)\
     public:\
-		typedef BASE base_t;\
+        typedef BASE base_t;\
         template<typename Visitor>\
         static void reflect(Visitor* visitor, NAME const* c)\
         {\
@@ -499,7 +502,7 @@ struct TypeStorage<T,Base,true> : public Base
 //-----------------------------------------------------------------------------
 
 #define REGISTER_TYPE_(NAME)\
-	reflectos::internal::TypeInfoImpl<NAME> reflectos::internal::TypeStorage<NAME,reflectos::internal::empty,false>::info(#NAME);
+    reflectos::internal::TypeInfoImpl<NAME> reflectos::internal::TypeStorage<NAME,reflectos::internal::empty,false>::info(#NAME);
 //-----------------------------------------------------------------------------
 
 inline const char* TypeInfo::name() const           { return m_name; }

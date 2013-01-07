@@ -7,8 +7,6 @@
 #include <crtdbg.h>
 #endif
 
-//INIT_REFLECTION();
-
 class ErrorOutput : public unitos::Output
 {
 public:
@@ -21,6 +19,8 @@ public:
 
 int main(int argc, char *argv[])
 {
+    REFLECTOS_INIT();
+
 #if defined(__UNITOS_WIN32__) && !(NDEBUG)
     _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF | _CRTDBG_CHECK_ALWAYS_DF);
     _CrtSetReportMode(_CRT_ERROR, _CRTDBG_MODE_DEBUG);

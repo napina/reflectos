@@ -10,11 +10,11 @@ TEST_SUITE(Registry)
 {
     TEST(IterateAll)
     {
-		const r::TypeInfo* typeInfo = r::internal::Registry::s_typeList;
+        const r::TypeInfo* typeInfo = r::internal::Registry::s_typeList;
         while( typeInfo != nullptr )
         {
             printf( "%s\n", typeInfo->name() );
-			const r::FunctionInfo* funcInfo = typeInfo->getFirstFunction();
+            const r::FunctionInfo* funcInfo = typeInfo->getFirstFunction();
             while( funcInfo != nullptr )
             {
                 printf( "  %s(", funcInfo->name() );
@@ -26,42 +26,9 @@ TEST_SUITE(Registry)
                         printf( ", " );
                 }*/
                 printf( ")\n" );
-				funcInfo = funcInfo->next();
+                funcInfo = funcInfo->next();
             }
             typeInfo = typeInfo->next();
         }
     }
-#if 0
-    TEST(CreateDelete)
-    {
-        //ObjectPtr object = ReflectionDB::createObject("Namespace::SimpleClass");
-    }
-
-    TEST(InvokeAdd)
-    {
-        const FunctionInfo* func = Registry::getClass("Namespace::SimpleClass")->getFunction("add");
-        int ret = func->invoke<int (int, int)>(nullptr)(3, 4);
-        EXPECT_EQUAL(ret, 7);
-    }
-
-    TEST(InvokeGetData)
-    {
-        Namespace::SimpleClass obj;
-        obj.setData(87);
-
-        const FunctionInfo* func = obj.getClassInfo()->getFunction("getData");
-        int ret = func->invoke<int (void)>(&obj)();
-        EXPECT_EQUAL(ret, 87);
-    }
-
-    TEST(InvokeSetData)
-    {
-        Namespace::SimpleClass obj;
-        obj.setData(0);
-
-        const FunctionInfo* func = obj.getClassInfo()->getFunction("setData");
-        func->invoke<void (int)>(&obj)(99);
-        EXPECT_EQUAL(obj.getData(), 99);
-    }
-#endif
 }

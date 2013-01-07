@@ -31,9 +31,9 @@ class Fixture : public unitos::SuiteTest
 {
 public:
     Fixture() : unitos::SuiteTest()
-	{
-		SimpleClass::reflect((r::internal::ClassInfoImpl<SimpleClass>*)r::inspect("SimpleClass"), nullptr);
-	}
+    {
+        SimpleClass::reflect((r::internal::ClassInfoImpl<SimpleClass>*)r::inspect("SimpleClass"), nullptr);
+    }
 
     virtual ~Fixture() {}
 };
