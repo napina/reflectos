@@ -87,8 +87,17 @@ TEST_SUITE(Simple)
         c.setData(98);
         r::FunctionInfo const* info = r::inspect("SimpleClass")->getFunction("getData");
         EXPECT_VALID(info);
-        int value = info->call0<int>(&c);
+        int value = info->call<int>(&c);
         EXPECT_EQUAL(value, 98);
+    }
+
+	TEST(CallSetData)
+    {
+        SimpleClass c;
+        r::FunctionInfo const* info = r::inspect("SimpleClass")->getFunction("setData");
+        EXPECT_VALID(info);
+        info->call<void,int>(&c,33);
+		EXPECT_EQUAL(c.getData(), 33);
     }
 
     TEST(CallOne)
@@ -96,7 +105,7 @@ TEST_SUITE(Simple)
         SimpleClass c;
         r::FunctionInfo const*info = r::inspect("SimpleClass")->getFunction("one");
         EXPECT_VALID(info);
-        int value = info->call0<int>(&c);
+        int value = info->call<int>(&c);
         EXPECT_EQUAL(value, 1);
     }
 }

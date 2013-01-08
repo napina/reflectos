@@ -131,19 +131,19 @@ struct FunctionInfo
     REFLECTOS_DELEGATE<Signature> asDelegate(void* obj) const;
 
     template<typename R>
-    R                           call0(void* obj) const;
+    R                           call(void* obj) const;
     template<typename R,typename A>
-    R                           call1(void* obj, A) const;
+    R                           call(void* obj, A) const;
     template<typename R,typename A,typename B>
-    R                           call2(void* obj, A, B) const;
+    R                           call(void* obj, A, B) const;
     template<typename R,typename A,typename B,typename C>
-    R                           call3(void* obj, A, B, C) const;
+    R                           call(void* obj, A, B, C) const;
     template<typename R,typename A,typename B,typename C,typename D>
-    R                           call4(void* obj, A, B, C, D) const;
+    R                           call(void* obj, A, B, C, D) const;
     template<typename R,typename A,typename B,typename C,typename D,typename E>
-    R                           call5(void* obj, A, B, C, D, E) const;
+    R                           call(void* obj, A, B, C, D, E) const;
     template<typename R,typename A,typename B,typename C,typename D,typename E,typename F>
-    R                           call6(void* obj, A, B, C, D, E, F) const;
+    R                           call(void* obj, A, B, C, D, E, F) const;
 
 protected:
     PtrType m_ptr;
@@ -552,25 +552,25 @@ template<typename Signature>
 inline REFLECTOS_DELEGATE<Signature> FunctionInfo::asDelegate(void* obj) const  { return reinterpret_cast<REFLECTOS_DELEGATE<Signature>(*)(void*)>(m_ptr)(obj); }
 
 template<typename R>
-inline R FunctionInfo::call0(void* obj) const                                   { return asDelegate<R()>(obj)(); }
+inline R FunctionInfo::call(void* obj) const                                    { return asDelegate<R()>(obj)(); }
 
 template<typename R,typename A>
-inline R FunctionInfo::call1(void* obj,A a) const                               { return asDelegate<R(A)>(obj)(a); }
+inline R FunctionInfo::call(void* obj,A a) const                                { return asDelegate<R(A)>(obj)(a); }
 
 template<typename R,typename A,typename B>
-inline R FunctionInfo::call2(void* obj,A a,B b) const                           { return asDelegate<R(A,B)>(obj)(a,b); }
+inline R FunctionInfo::call(void* obj,A a,B b) const                            { return asDelegate<R(A,B)>(obj)(a,b); }
 
 template<typename R,typename A,typename B,typename C>
-inline R FunctionInfo::call3(void* obj,A a,B b,C c) const                       { return asDelegate<R(A,B,C)>(obj)(a,b,c); }
+inline R FunctionInfo::call(void* obj,A a,B b,C c) const                        { return asDelegate<R(A,B,C)>(obj)(a,b,c); }
 
 template<typename R,typename A,typename B,typename C,typename D>
-inline R FunctionInfo::call4(void* obj,A a,B b,C c,D d) const                   { return asDelegate<R(A,B,C,D)>(obj)(a,b,c,d); }
+inline R FunctionInfo::call(void* obj,A a,B b,C c,D d) const                    { return asDelegate<R(A,B,C,D)>(obj)(a,b,c,d); }
 
 template<typename R,typename A,typename B,typename C,typename D,typename E>
-inline R FunctionInfo::call5(void* obj,A a,B b,C c,D d,E e) const               { return asDelegate<R(A,B,C,D,E)>(obj)(a,b,c,d,e); }
+inline R FunctionInfo::call(void* obj,A a,B b,C c,D d,E e) const                { return asDelegate<R(A,B,C,D,E)>(obj)(a,b,c,d,e); }
 
 template<typename R,typename A,typename B,typename C,typename D,typename E,typename F>
-inline R FunctionInfo::call6(void* obj,A a,B b,C c,D d,E e,F f) const           { return asDelegate<R(A,B,C,D,E,F)>(obj)(a,b,c,d,e,f); }
+inline R FunctionInfo::call(void* obj,A a,B b,C c,D d,E e,F f) const            { return asDelegate<R(A,B,C,D,E,F)>(obj)(a,b,c,d,e,f); }
 
 //-----------------------------------------------------------------------------
 
