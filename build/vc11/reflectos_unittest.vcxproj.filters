@@ -12,25 +12,25 @@
     <ClInclude Include="..\..\include\FastDelegate.h">
       <Filter>reflectos</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\reflectos.h">
+    <ClInclude Include="..\..\include\reflectos2.h">
       <Filter>reflectos</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\tests\main.cpp" />
+    <ClCompile Include="..\..\tests\virtual_tests.cpp">
+      <Filter>tests</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\tests\abstract_tests.cpp">
+      <Filter>tests</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\tests\simple_tests.cpp">
       <Filter>tests</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tests\function_tests.cpp">
       <Filter>tests</Filter>
     </ClCompile>
     <ClCompile Include="..\..\tests\registry_tests.cpp">
-      <Filter>tests</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\tests\simple_tests.cpp">
-      <Filter>tests</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\tests\virtual_tests.cpp">
       <Filter>tests</Filter>
     </ClCompile>
   </ItemGroup>
