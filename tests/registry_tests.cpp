@@ -15,7 +15,7 @@ TEST_SUITE(Registry)
             unitos::String str(2048);
             str << typeInfo->name();
             if(typeInfo->base() != nullptr) {
-                str << " : " << typeInfo->name();
+                str << " : " << typeInfo->base()->name();
             }
             str << '\n';
             const r::FunctionInfo* funcInfo = typeInfo->getFirstFunction();

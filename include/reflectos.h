@@ -43,7 +43,7 @@ struct FieldInfo;
 struct FunctionInfo;
 
 namespace internal {
-    template<typename T,typename Base,bool IsClass> struct TypeStorage;
+    template<typename T,bool IsClass> struct TypeStorage;
     template<typename T> struct type_inspect_base;
     template<typename T> struct RegistryImpl;
 }
@@ -155,7 +155,7 @@ protected:
 //-----------------------------------------------------------------------------
 
 template<typename T>
-struct type_inspect : internal::TypeStorage<T,typename internal::type_inspect_base<T>::type,std::is_class<T>::value>
+struct type_inspect : internal::TypeStorage<T,std::is_class<T>::value>
 {
     static char const*      name();
     static uint32           id();
@@ -228,16 +228,24 @@ struct has_simple_constructor
 };
 //----------------------------------------------------------------------------
 
-struct empty {};
-
 template<typename T>
-struct type_inspect_base
+struct has_base
 {
-    template<typename I> struct has { typedef type_inspect<typename I::base_t> base; };
-    template<typename I> static has<I> test(typename I::base_t* a = nullptr);
-    template<typename> static empty test(...);
+    template<typename I> static std::true_type test(typename I::base_t* a = nullptr);
+    template<typename> static std::false_type test(...);
     typedef decltype(test<T>()) type;
+	static const bool value = type::value;
 };
+//----------------------------------------------------------------------------
+
+template<typename T,bool HasBase> struct define_base;
+template<typename T> struct define_base<T,true>		{ typedef type_inspect<typename T::base_t> base; };
+template<typename T> struct define_base<T,false>	{};
+//-----------------------------------------------------------------------------
+
+template<typename T,bool HasBase> struct get_base_info;
+template<typename T> struct get_base_info<T,true>	{ static TypeInfo* get() { return (TypeInfo*)Registry::getType(type_inspect<typename T::base_t>::id()); } };
+template<typename T> struct get_base_info<T,false>	{ static TypeInfo* get() { return nullptr; } };
 //-----------------------------------------------------------------------------
 
 template<typename T>
@@ -473,7 +481,7 @@ struct ClassInfoImpl : public TypeInfo
 protected:
     void init()
     {
-        //m_base = Registry::getType(type_inspect<T>::base::id());
+		m_base = get_base_info<T,has_base<T>::value>::get();
         T::reflect(this, nullptr);
     }
 
@@ -483,14 +491,14 @@ private:
 };
 //-----------------------------------------------------------------------------
 
-template<typename T,typename Base>
-struct TypeStorage<T,Base,false>
+template<typename T>
+struct TypeStorage<T,false>
 {
     static TypeInfoImpl<T> info;
 };
 
-template<typename T,typename Base>
-struct TypeStorage<T,Base,true> : public Base
+template<typename T>
+struct TypeStorage<T,true> : public internal::define_base<T,internal::has_base<T>::value>
 {
     static ClassInfoImpl<T> info;
 };
@@ -520,11 +528,11 @@ struct TypeStorage<T,Base,true> : public Base
         }
 
 #define REGISTER_CLASS_(NAME)\
-    reflectos::internal::ClassInfoImpl<NAME> reflectos::internal::TypeStorage<NAME,typename reflectos::internal::type_inspect_base<NAME>::type,true>::info(#NAME);
+    reflectos::internal::ClassInfoImpl<NAME> reflectos::internal::TypeStorage<NAME,true>::info(#NAME);
 //-----------------------------------------------------------------------------
 
 #define REGISTER_TYPE_(NAME)\
-    reflectos::internal::TypeInfoImpl<NAME> reflectos::internal::TypeStorage<NAME,reflectos::internal::empty,false>::info(#NAME);
+    reflectos::internal::TypeInfoImpl<NAME> reflectos::internal::TypeStorage<NAME,false>::info(#NAME);
 //-----------------------------------------------------------------------------
 
 inline const char* TypeInfo::name() const           { return m_name; }
