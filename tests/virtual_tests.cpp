@@ -29,6 +29,7 @@ public:
     DerivedClass() { m_data = 5; m_temp = new int; }
 
     virtual int test() { return 77; }
+    virtual int foo() { return 333; }
 
 public:
     int m_extra;
@@ -37,7 +38,7 @@ public:
     REFLECT_VIRTUAL_CLASS(DerivedClass,BaseClass)
         REFLECT_FIELD(m_extra)
         //REFLECT_FIELD(m_temp)
-        REFLECT_FUNCTION(test)
+        REFLECT_FUNCTION(foo)
     REFLECT_END()
 };
 REGISTER_CLASS(DerivedClass)
