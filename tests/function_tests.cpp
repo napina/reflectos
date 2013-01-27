@@ -18,7 +18,7 @@ REGISTER_TYPE(int)
 namespace r = reflectos;
 
 #define EXPECT_SAME(Type,ExpectedType)\
-    EXPECT_TRUE((std::is_same<Type,ExpectedType>::value));
+    EXPECT_TRUE((r::is_same<Type,ExpectedType>::value));
 
 TEST_SUITE(Function)
 {
