@@ -28,7 +28,6 @@ IN THE SOFTWARE.
 #define REFLECTOS_USE_FASTDELEGATES
 
 #include <new>
-#include <type_traits>
 #ifdef REFLECTOS_USE_FASTDELEGATES
 #   define REFLECTOS_DELEGATE  FastDelegate
 #   include "FastDelegate.h"
@@ -41,6 +40,7 @@ namespace reflectos {
 
 struct FieldInfo;
 struct FunctionInfo;
+template<typename T1,typename T2> struct is_same;
 
 namespace internal {
     template<typename T,bool IsClass> struct TypeStorage;
@@ -156,7 +156,7 @@ protected:
 //-----------------------------------------------------------------------------
 
 template<typename T>
-struct type_inspect : internal::TypeStorage<T,std::is_class<T>::value>
+struct type_inspect : internal::TypeStorage<T,__is_class(T)>
 {
     static char const*      name();
     static uint32           id();
@@ -222,21 +222,24 @@ inline uint32 fnv1a_hash(const char* str)
 }
 //-----------------------------------------------------------------------------
 
+struct true_type { enum { value = true }; };
+struct false_type { enum { value = false}; };
+
 template<typename T>
 struct has_simple_constructor
 {
-    template<typename C> static std::true_type test(int, decltype(C())* a = nullptr);
-    template<typename> static std::false_type test(...);
+    template<typename C> static true_type test(int, decltype(C())* a = nullptr);
+    template<typename> static false_type test(...);
     typedef decltype(test<T>(0)) type;
-    static const bool value = type::value & !std::is_abstract<T>::value;
+    static const bool value = type::value & !__is_abstract(T);
 };
 //----------------------------------------------------------------------------
 
 template<typename T>
 struct has_base
 {
-    template<typename I> static std::true_type test(typename I::base_t* a = nullptr);
-    template<typename> static std::false_type test(...);
+    template<typename I> static true_type test(typename I::base_t* a = nullptr);
+    template<typename> static false_type test(...);
     typedef decltype(test<T>()) type;
     static const bool value = type::value;
 };
@@ -283,8 +286,6 @@ struct RegistryImpl
 
 template<typename T>
 TypeInfo* RegistryImpl<T>::s_typeList = nullptr;
-
-typedef RegistryImpl<void> Registry;
 //-----------------------------------------------------------------------------
 
 #ifdef REFLECTOS_USE_FASTDELEGATES
@@ -370,7 +371,7 @@ enum Flags {
 template<typename T>
 struct TypeInfoImpl : public TypeInfo
 {
-    static_assert(std::is_class<T>::value == false, "Type is a class. You need to use REGISTER_CLASS for this");
+    static_assert(__is_class(T) == false, "Type is a class. You need to use REGISTER_CLASS for this");
     TypeInfoImpl(char const* name) {
         m_id = fnv1a_hash(name);
         m_flagsAndSize = flag_pod | flag_simple_constructor | flag_reflected | sizeof(T);
@@ -417,13 +418,13 @@ template<typename T> struct constructClass<T,false> {
 template<typename T>
 struct ClassInfoImpl : public TypeInfo
 {
-    static_assert(std::is_class<T>::value == true, "Type isn't a class. You need to use REGISTER_TYPE for this");
+    static_assert(__is_class(T) == true, "Type isn't a class. You need to use REGISTER_TYPE for this");
     ClassInfoImpl(const char* name) {
         m_id = fnv1a_hash(name);
         m_flagsAndSize = flag_class | sizeof(T);
-        m_flagsAndSize |= std::is_pod<T>::value ? flag_pod : 0;
-        m_flagsAndSize |= std::is_abstract<T>::value ? flag_abstract : 0;
-        m_flagsAndSize |= std::is_polymorphic<T>::value ? flag_polymorphic : 0;
+        m_flagsAndSize |= __is_pod(T) ? flag_pod : 0;
+        m_flagsAndSize |= __is_abstract(T) ? flag_abstract : 0;
+        m_flagsAndSize |= __is_polymorphic(T) ? flag_polymorphic : 0;
         m_flagsAndSize |= has_simple_constructor<T>::value ? flag_simple_constructor : 0;
         m_name = name;
         m_firstFunction = nullptr;
@@ -617,10 +618,10 @@ template<typename T> struct type_inspect<const T*> : public type_inspect<T> {};
 template<typename T> inline char const* type_inspect<T>::name()                   { return info.name(); }
 template<typename T> inline uint32 type_inspect<T>::id()                          { return info.id(); }
 template<typename T> inline size_t type_inspect<T>::size()                        { return sizeof(T); }
-template<typename T> inline bool type_inspect<T>::isClass()                       { return std::is_class<T>::value; }
-template<typename T> inline bool type_inspect<T>::isPOD()                         { return std::is_pod<T>::value; }
-template<typename T> inline bool type_inspect<T>::isAbstract()                    { return std::is_abstract<T>::value; }
-template<typename T> inline bool type_inspect<T>::isPolymorphic()                 { return std::is_polymorphic<T>::value; }
+template<typename T> inline bool type_inspect<T>::isClass()                       { return __is_class(T); }
+template<typename T> inline bool type_inspect<T>::isPOD()                         { return __is_pod(T); }
+template<typename T> inline bool type_inspect<T>::isAbstract()                    { return __is_abstract(T); }
+template<typename T> inline bool type_inspect<T>::isPolymorphic()                 { return __is_polymorphic(T); }
 template<typename T> inline bool type_inspect<T>::hasSimpleConstructor()          { return internal::has_simple_constructor<T>::value; }
 template<typename T> inline void* type_inspect<T>::construct()                    { return info.construct(); }
 template<typename T> inline void* type_inspect<T>::constructArray(size_t count)   { return info.constructArray(count); }
@@ -631,11 +632,14 @@ template<typename T> inline void type_inspect<T>::destroyInPlace(void* ptr)     
 template<typename T> inline void type_inspect<T>::copy(void* dst, void const* src) { info.copy(dst, src); }
 //-----------------------------------------------------------------------------
 
+template<typename T1,typename T2> struct is_same    { enum { value = false }; };
+template<typename T> struct is_same<T,T>            { enum { value = true }; };
+
 template<typename R>
 struct function_inspect<R()> {
     typedef R(*Type)();
     typedef R R;
-    static const bool returns = !std::is_same<R,void>::value;
+    static const bool returns = !is_same<R,void>::value;
     static const int count = 0;
     static const bool is_global = false;
     static const bool is_static = false;
@@ -759,8 +763,8 @@ struct member_function_inspect<T,R(*)(A,B,C,D,E,F)> : public function_inspect<R(
 
 template<typename T> inline TypeInfo const* inspect(T const&)   { return &type_inspect<T>::info; }
 template<> inline TypeInfo const* inspect(void* const&)         { return nullptr; }
-inline TypeInfo const* inspect(uint32 id)                       { return internal::Registry::getType(id); }
-inline TypeInfo const* inspect(char const* name)                { return internal::Registry::getType(internal::fnv1a_hash(name)); }
+inline TypeInfo const* inspect(uint32 id)                       { return Registry::getType(id); }
+inline TypeInfo const* inspect(char const* name)                { return Registry::getType(internal::fnv1a_hash(name)); }
 
 template<typename Visitor,typename T>
 inline void reflect(Visitor* visitor, T const* obj)             { type_inspect<T>::reflect(visitor, obj); }
