@@ -3,7 +3,7 @@
 #include "unitos/unitos.h"
 #include "reflectos.h"
 #include <cstdio>
-#if defined(__UNITOS_WIN32__) && !(NDEBUG)
+#if defined(__UNITOS_WINDOWS__) && !(NDEBUG)
 #include <crtdbg.h>
 #endif
 
@@ -21,7 +21,7 @@ int main(int argc, char *argv[])
 {
     reflectos::Registry::init();
 
-#if defined(__UNITOS_WIN32__) && !(NDEBUG)
+#if defined(__UNITOS_WINDOWS__) && !(NDEBUG)
     _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF | _CRTDBG_CHECK_ALWAYS_DF);
     _CrtSetReportMode(_CRT_ERROR, _CRTDBG_MODE_DEBUG);
     _CrtSetReportMode(_CRT_WARN, _CRTDBG_MODE_FILE);
