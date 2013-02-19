@@ -30,6 +30,8 @@
 *.idb
 *.manifest
 *.opensdf
+*.filters
+*.sln
 
 external/lua/doc
 external/lua/src

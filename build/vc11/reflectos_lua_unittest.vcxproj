@@ -19,7 +19,6 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\include\FastDelegate.h" />
     <ClInclude Include="..\..\include\reflectos.h" />
     <ClInclude Include="..\..\include\reflectos_lua.h" />
   </ItemGroup>
@@ -30,6 +29,9 @@
   <ItemGroup>
     <ProjectReference Include="..\..\..\unitos\build\vc11\unitos.vcxproj">
       <Project>{bd86b79d-ad71-45a0-8f04-3165e6aeaa52}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\external\lua\lua.vcxproj">
+      <Project>{b76101f1-9bb1-4360-ac6a-f4f532c65194}</Project>
     </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">

@@ -26,7 +26,7 @@ IN THE SOFTWARE.
 #define REFLECTOS_LUA_H
 
 #include "reflectos.h"
-#include "lua.h"
+#include "lua.hpp"
 
 namespace reflectos {
 //-----------------------------------------------------------------------------
@@ -34,12 +34,12 @@ namespace reflectos {
 template<typename T>
 struct LuaClass
 {
-    void register(lua_State* L)
+    static void regg(lua_State* L)
     {
         lua_newtable(L);
         int methods = lua_gettop(L);
 
-        char const className = type_inspect<T>::name();
+        char const* className = type_inspect<T>::name();
         luaL_newmetatable(L, className);
         int metatable = lua_gettop(L);
 
@@ -47,7 +47,7 @@ struct LuaClass
         // scripts can add functions written in Lua.
         lua_pushstring(L, className);
         lua_pushvalue(L, methods);
-        lua_settable(L, LUA_GLOBALSINDEX);
+        lua_settable(L, LUA_REGISTRYINDEX);
 
         lua_pushliteral(L, "__metatable");
         lua_pushvalue(L, methods);
@@ -92,7 +92,8 @@ struct LuaClass
         lua_remove(L, 1);
         void* obj = lua_newuserdata(L, type_inspect<T>::size());
         type_inspect<T>::constructInPlace(obj);
-        luaL_getmetatable(L, type_inspect<T>::name());
+        //luaL_getmetatable(L, type_inspect<T>::name());
+        lua_getfield(L, LUA_REGISTRYINDEX, type_inspect<T>::name());
         lua_setmetatable(L, -2);
         return 1;
     }
@@ -108,7 +109,7 @@ struct LuaClass
     {
         char buffer[32];
         void* obj = lua_touserdata(L, 1);
-        sprintf(buff, "%p", obj);
+        sprintf_s(buffer, "%p", obj);
         lua_pushfstring(L, "%s (%s)", type_inspect<T>::name(), buffer);
         return 1;
     }
@@ -123,7 +124,7 @@ struct LuaBinder
     template<typename T>
     void visitClass()
     {
-        LuaClass<T>::register(m_lua);
+        LuaClass<T>::regg(m_lua);
     }
 
     template<typename T,typename F>

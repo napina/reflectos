@@ -19,7 +19,6 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\include\FastDelegate.h" />
     <ClInclude Include="..\..\include\reflectos.h" />
   </ItemGroup>
   <ItemGroup>
