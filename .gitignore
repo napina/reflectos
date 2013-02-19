@@ -30,3 +30,9 @@
 *.idb
 *.manifest
 *.opensdf
+
+external/lua/doc
+external/lua/src
+external/lua/x64
+external/lua/Makefile
+external/lua/README
