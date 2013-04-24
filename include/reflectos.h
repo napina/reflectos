@@ -212,12 +212,11 @@ namespace internal {
 
 inline uint32 fnv1a_hash(const char* str)
 {
-    uint32 value = 16777619U; // basis
-    while (*str != 0) {
+    uint32 value = 2166136261U; // basis
+    do {
         value ^= str[0];
-        value *= 2166136261U; // prime
-        ++str;
-    }
+        value *= 16777619u; // prime
+    } while((*str++) != 0);
     return value;
 }
 //-----------------------------------------------------------------------------
