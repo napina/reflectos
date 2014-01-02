@@ -1,5 +1,6 @@
 // Copyright (c) 2013 Ville Ruusutie
 #include "unitos/unitos.h"
+#if 0
 #include "reflectos_lua.h"
 
 namespace r = reflectos;
@@ -68,3 +69,4 @@ TEST_SUITE(Lua)
         
     }
 }
+#endif

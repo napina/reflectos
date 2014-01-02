@@ -53,7 +53,7 @@ TEST_SUITE(Virtual)
     TEST(InspectBase)
     {
         EXPECT_EQUAL(r::type_inspect<BaseClass>::name(), "BaseClass");
-        EXPECT_NOTEQUAL(r::type_inspect<BaseClass>::id(), 0);
+        EXPECT_NOTEQUAL(r::type_inspect<BaseClass>::id(), 0U);
         EXPECT_FALSE(r::type_inspect<BaseClass>::isPOD());
         EXPECT_TRUE( r::type_inspect<BaseClass>::isClass());
         EXPECT_FALSE(r::type_inspect<BaseClass>::isAbstract());
@@ -64,7 +64,7 @@ TEST_SUITE(Virtual)
     TEST(InspectDerived)
     {
         EXPECT_EQUAL(r::type_inspect<DerivedClass>::name(), "DerivedClass");
-        EXPECT_NOTEQUAL(r::type_inspect<DerivedClass>::id(), 0);
+        EXPECT_NOTEQUAL(r::type_inspect<DerivedClass>::id(), 0U);
         EXPECT_FALSE(r::type_inspect<DerivedClass>::isPOD());
         EXPECT_TRUE( r::type_inspect<DerivedClass>::isClass());
         EXPECT_FALSE(r::type_inspect<DerivedClass>::isAbstract());

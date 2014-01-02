@@ -34,7 +34,7 @@ TEST_SUITE(Simple)
     TEST(type_inspect)
     {
         EXPECT_EQUAL(r::type_inspect<SimpleClass>::name(), "SimpleClass");
-        EXPECT_NOTEQUAL(r::type_inspect<SimpleClass>::id(), 0);
+        EXPECT_NOTEQUAL(r::type_inspect<SimpleClass>::id(), 0U);
         EXPECT_FALSE(r::type_inspect<SimpleClass>::isPOD());
         EXPECT_TRUE( r::type_inspect<SimpleClass>::isClass());
         EXPECT_FALSE(r::type_inspect<SimpleClass>::isAbstract());

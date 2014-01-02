@@ -1,6 +1,10 @@
 #include "unitos/unitos.h"
 #include "reflectos.h"
 
+#pragma warning(disable:4505)
+
+namespace {
+
 struct Class
 {
     void none(int, const char*) {}
@@ -9,8 +13,9 @@ struct Class
     static char* test() { return "test"; }
 };
 
-static int global(int value,const char*,long) { return value; }
+static int globalFunc(int value,const char*,long) { return value; }
 
+}
 //----------------------------------------------------------------------------
 
 REGISTER_TYPE(int)
@@ -70,7 +75,7 @@ TEST_SUITE(Function)
 
     TEST(Global)
     {
-        typedef r::function_inspect<decltype(&global)> info;
+        typedef r::function_inspect<decltype(&globalFunc)> info;
         EXPECT_EQUAL(info::count, 3);
         EXPECT_TRUE(info::returns);
         EXPECT_FALSE(info::is_const);

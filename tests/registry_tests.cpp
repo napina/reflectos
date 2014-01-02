@@ -8,9 +8,10 @@ namespace r = reflectos;
 
 TEST_SUITE(Registry)
 {
+#if 1
     TEST(IterateAll)
     {
-        const r::TypeInfo* typeInfo = r::internal::Registry::s_typeList;
+        const r::TypeInfo* typeInfo = r::Registry::s_typeList;
         while(typeInfo != nullptr) {
             unitos::String str(2048);
             str << typeInfo->name();
@@ -31,9 +32,10 @@ TEST_SUITE(Registry)
                 str << ")\n";
                 funcInfo = funcInfo->next();
             }
-            str.Terminate();
+            str.terminate();
             *this << str;
             typeInfo = typeInfo->next();
         }
     }
+#endif
 }
