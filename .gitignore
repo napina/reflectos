@@ -33,8 +33,5 @@
 *.filters
 *.sln
 
-external/lua/doc
-external/lua/src
-external/lua/x64
-external/lua/Makefile
-external/lua/README
+build
+external
