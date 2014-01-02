@@ -30,7 +30,9 @@ IN THE SOFTWARE.
 #include <new>
 #ifdef REFLECTOS_USE_FASTDELEGATES
 #   define REFLECTOS_DELEGATE  FastDelegate
+#   pragma warning(disable: 4100)
 #   include "FastDelegate.h"
+#   pragma warning(default: 4100)
 #else
 #   define REFLECTOS_DELEGATE  std::function
 #   include <functional>
@@ -156,7 +158,7 @@ protected:
 //-----------------------------------------------------------------------------
 
 template<typename T>
-struct type_inspect : internal::TypeStorage<T,__is_class(T)>
+struct type_inspect : internal::TypeStorage<T, __is_class(T) >
 {
     static char const*      name();
     static uint32           id();
@@ -230,7 +232,7 @@ struct has_simple_constructor
     template<typename C> static true_type test(int, decltype(C())* a = nullptr);
     template<typename> static false_type test(...);
     typedef decltype(test<T>(0)) type;
-    static const bool value = type::value & !__is_abstract(T);
+    static const bool value = type::value && !__is_abstract(T);
 };
 //----------------------------------------------------------------------------
 
@@ -239,7 +241,7 @@ struct has_base
 {
     template<typename I> static true_type test(typename I::base_t* a = nullptr);
     template<typename> static false_type test(...);
-    typedef decltype(test<T>()) type;
+    typedef decltype(test<T>((T*)nullptr)) type;
     static const bool value = type::value;
 };
 //----------------------------------------------------------------------------
@@ -388,20 +390,20 @@ struct TypeInfoImpl : public TypeInfo
     virtual void destroyInPlace(void* ptr) const        { static_cast<T*>(ptr)->~T(); }
     virtual void copy(void* dst, void const* src) const { *static_cast<T*>(dst) = *static_cast<T const*>(src); }
 
-    virtual FieldInfo const* getField(uint32 id) const              { return nullptr; }
-    virtual FieldInfo const* getField(const char* name) const       { return nullptr; }
+    virtual FieldInfo const* getField(uint32 /*id*/) const          { return nullptr; }
+    virtual FieldInfo const* getField(const char* /*name*/) const   { return nullptr; }
     virtual FieldInfo const* getFirstField() const                  { return nullptr; }
 
-    virtual FunctionInfo const* getFirstFunction() const            { return nullptr; }
-    virtual FunctionInfo const* getFunction(uint32 id) const        { return nullptr; }
-    virtual FunctionInfo const* getFunction(const char* name) const { return nullptr; }
+    virtual FunctionInfo const* getFirstFunction() const                { return nullptr; }
+    virtual FunctionInfo const* getFunction(uint32 /*id*/) const        { return nullptr; }
+    virtual FunctionInfo const* getFunction(const char* /*name*/) const { return nullptr; }
 
 protected:
     virtual void init() {}
 };
 //-----------------------------------------------------------------------------
 
-template<typename T,bool Can> struct constructClass {
+template<typename T,bool Simple> struct constructClass {
     static void* one()               { return new T(); }
     static void* many(size_t count)  { return new T[count]; }
     static void inplace(void* ptr)   { new (ptr) T(); }
@@ -411,6 +413,14 @@ template<typename T> struct constructClass<T,false> {
     static void* one()               { return nullptr; }
     static void* many(size_t)        { return nullptr; }
     static void inplace(void*)       {}
+};
+
+template<typename T,bool Trivial> struct destructClass {
+    static void destroy(void*)       {}
+};
+
+template<typename T> struct destructClass<T,false> {
+    static void destroy(void* ptr)   { static_cast<T*>(ptr)->~T(); }
 };
 //-----------------------------------------------------------------------------
 
@@ -437,7 +447,7 @@ struct ClassInfoImpl : public TypeInfo
     virtual void constructInPlace(void* ptr) const      { constructClass<T,has_simple_constructor<T>::value>::inplace(ptr); }
     virtual void destroy(void* ptr) const               { delete static_cast<T*>(ptr); }
     virtual void destroyArray(void* ptr) const          { delete [] static_cast<T*>(ptr); }
-    virtual void destroyInPlace(void* ptr) const        { static_cast<T*>(ptr)->~T(); }
+    virtual void destroyInPlace(void* ptr) const        { destructClass<T,__has_trivial_destructor(T)>::destroy(ptr); }
     virtual void copy(void* dst, void const* src) const { *static_cast<T*>(dst) = *static_cast<T const*>(src); }
 
     virtual FieldInfo const* getFirstField() const                  { return m_firstField; }
