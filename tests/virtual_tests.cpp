@@ -122,4 +122,17 @@ TEST_SUITE(Virtual)
         EXPECT_EQUAL(r::inspect(basePtr)->id(), r::type_inspect<DerivedClass>::id());
         r::inspect("DerivedClass")->destroy(ptr);
     }
+
+    TEST(Inspect)
+    {
+        DerivedClass clss;
+        BaseClass* obj = &clss;
+        r::TypeInfo const* info = r::inspect(obj);
+        EXPECT_VALID(info);
+        EXPECT_EQUAL(info->name(), "DerivedClass");
+        EXPECT_FALSE(info->isPOD());
+        EXPECT_TRUE(info->isClass());
+        EXPECT_FALSE(info->isAbstract());
+        EXPECT_TRUE(info->isPolymorphic());
+    }
 }
