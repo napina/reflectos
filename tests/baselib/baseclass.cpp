@@ -1,31 +1,4 @@
-reflectos
-=========
-
-Small and fast reflection library for C++. Relies on decltype and partial template support.
-
-
-Features
-========
-- Type inspection
-  - Create/delete type
-  - Call functions
-  - Get function as fastdelegate or std::function
-- Extendable reflection with custom visitor
-  - Makes easy to write serialization code or add script language binding
-- Function parameter inspection
-
-
-Todo
-====
-- Finish field reflection
-- Proper virtual inheritance
-- Allow function override
-- Lua binder
-- Dynamic registry
-
-
-License
-=======
+/*=============================================================================
 
 Copyright (c) 2013 Ville Ruusutie
 
@@ -46,3 +19,34 @@ THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 IN THE SOFTWARE.
+
+=============================================================================*/
+#define BUILD_BASE_DLL
+#include "reflectos.h"
+#include "baseclass.h"
+
+REGISTER_TYPE(int)
+REGISTER_CLASS(SharedBaseClass)
+
+SharedBaseClass::~SharedBaseClass()
+{
+}
+
+SharedBaseClass::SharedBaseClass()
+    : m_data(0)
+{
+}
+
+int SharedBaseClass::getData()
+{
+    return m_data;
+}
+
+int SharedBaseClass::test()
+{
+    return m_data;
+}
+
+reflectos::TypeInfo* getBaseTypes() {
+    return reflectos::Registry::s_typeList;
+}

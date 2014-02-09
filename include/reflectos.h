@@ -1,6 +1,6 @@
 /*=============================================================================
 
-Copyright (c) 2011-2013 Ville Ruusutie
+Copyright (c) 2013 Ville Ruusutie
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -97,7 +97,8 @@ protected:
     virtual void init() = 0;
 
     uint32 m_id;
-    uint32 m_flagsAndSize;
+    uint32 m_size : 16;
+    uint32 m_flags : 16;
     TypeInfo* m_next;
     TypeInfo* m_base;
     char const* m_name;
@@ -110,17 +111,21 @@ struct FieldInfo
     uint32                      id() const;
     uint32                      offset() const;
     char const*                 name() const;
+    TypeInfo const*             type() const;
     FieldInfo const*            next() const;
 
 public:
     uint32 m_id;
     uint32 m_offset;
-    char const* m_name;
+    TypeInfo* m_type;
     FieldInfo* m_next;
+    char const* m_name;
 };
 //-----------------------------------------------------------------------------
 
+#ifdef REFLECTOS_USE_FASTDELEGATES
 using fastdelegate::FastDelegate;
+#endif
 
 struct FunctionInfo
 {
@@ -168,6 +173,7 @@ struct type_inspect : internal::TypeStorage<T, __is_class(T) >
     static bool             isAbstract();
     static bool             isPolymorphic();
     static bool             hasSimpleConstructor();
+    static TypeInfo const*  type();
 
     static void*            construct();
     static void*            constructArray(size_t count);
@@ -279,9 +285,22 @@ struct RegistryImpl
         }
     }
 
-    static void init(TypeInfo* info)
+    static void init(TypeInfo* type)
     {
-        info->init();
+        type->init();
+    }
+
+    static void merge(TypeInfo* list)
+    {
+        TypeInfo* c = list;
+        while(c != nullptr) {
+            TypeInfo* next = const_cast<TypeInfo*>(c->next());
+            if(getType(c->id()) == nullptr) {
+                c->m_next = s_typeList;
+                s_typeList = c;
+            }
+            c = next;
+        }
     }
 };
 
@@ -360,13 +379,12 @@ struct FunctionPtr<R(*)(A,B,C,D,E,F)> {
 //-----------------------------------------------------------------------------
 
 enum Flags {
-    flag_pod                = (1<<16),
-    flag_class              = (1<<17),
-    flag_abstract           = (1<<18),
-    flag_polymorphic        = (1<<19),
-    flag_simple_constructor = (1<<20),
-    flag_reflected          = (1<<21),
-    flags_size_mask         = 0xffff,
+    flag_pod                = (1<<1),
+    flag_class              = (1<<2),
+    flag_abstract           = (1<<3),
+    flag_polymorphic        = (1<<4),
+    flag_simple_constructor = (1<<5),
+    flag_reflected          = (1<<6),
 };
 
 template<typename T>
@@ -375,7 +393,8 @@ struct TypeInfoImpl : public TypeInfo
     static_assert(__is_class(T) == false, "Type is a class. You need to use REGISTER_CLASS for this");
     TypeInfoImpl(char const* name) {
         m_id = fnv1a_hash(name);
-        m_flagsAndSize = flag_pod | flag_simple_constructor | flag_reflected | sizeof(T);
+        m_flags = flag_pod | flag_simple_constructor | flag_reflected;
+        m_size = sizeof(T);
         m_name = name;
         m_base = nullptr;
         m_next = Registry::s_typeList;
@@ -430,11 +449,12 @@ struct ClassInfoImpl : public TypeInfo
     static_assert(__is_class(T) == true, "Type isn't a class. You need to use REGISTER_TYPE for this");
     ClassInfoImpl(const char* name) {
         m_id = fnv1a_hash(name);
-        m_flagsAndSize = flag_class | sizeof(T);
-        m_flagsAndSize |= __is_pod(T) ? flag_pod : 0;
-        m_flagsAndSize |= __is_abstract(T) ? flag_abstract : 0;
-        m_flagsAndSize |= __is_polymorphic(T) ? flag_polymorphic : 0;
-        m_flagsAndSize |= has_simple_constructor<T>::value ? flag_simple_constructor : 0;
+        m_size = sizeof(T);
+        m_flags = flag_class;
+        m_flags |= __is_pod(T) ? flag_pod : 0;
+        m_flags |= __is_abstract(T) ? flag_abstract : 0;
+        m_flags |= __is_polymorphic(T) ? flag_polymorphic : 0;
+        m_flags |= has_simple_constructor<T>::value ? flag_simple_constructor : 0;
         m_name = name;
         m_firstFunction = nullptr;
         m_base = nullptr;
@@ -480,12 +500,13 @@ struct ClassInfoImpl : public TypeInfo
     void visitField(const char* name, T const* object, F const* field)
     {
         // TODO implement
-        FieldInfo info;
+        static FieldInfo info;
         info.m_id = fnv1a_hash(name);
         info.m_name = name;
+        info.m_type = const_cast<TypeInfo*>(type_inspect<F>::type());
         info.m_offset = (uint32)((ptrdiff_t)field - (ptrdiff_t)object);
         info.m_next = m_firstField;
-        //m_firstField = &field;
+        m_firstField = &info;
     }
 
     template<typename T,typename funcptr_t,funcptr_t Function>
@@ -506,11 +527,10 @@ protected:
         m_base = get_base_info<T,has_base<T>::value>::get();
         if(m_base) {
             Registry::init(m_base);
-            m_firstFunction = const_cast<FunctionInfo*>(m_base->getFirstFunction());
         }
 
         T::reflect(this, nullptr);
-        m_flagsAndSize |= internal::flag_reflected;
+        m_flags |= internal::flag_reflected;
     }
 
 private:
@@ -553,7 +573,8 @@ struct TypeStorage<T,true> : public internal::define_base<T,internal::has_base<T
         template<typename Visitor>\
         static void reflect(Visitor* visitor, NAME const* c)\
         {\
-            typedef NAME ThisType;
+            typedef NAME ThisType;\
+            BASE::reflect(visitor, c);
 #define REFLECT_FIELD_(NAME)\
             visitor->visitField(#NAME, c, &c->NAME);
 #define REFLECT_FUNCTION_(NAME)\
@@ -571,19 +592,20 @@ struct TypeStorage<T,true> : public internal::define_base<T,internal::has_base<T
 
 inline const char* TypeInfo::name() const           { return m_name; }
 inline uint32 TypeInfo::id() const                  { return m_id; }
-inline size_t TypeInfo::size() const                { return (m_flagsAndSize & internal::flags_size_mask); }
-inline bool TypeInfo::isClass() const               { return (m_flagsAndSize & internal::flag_class) != 0; }
-inline bool TypeInfo::isPOD() const                 { return (m_flagsAndSize & internal::flag_pod) != 0; }
-inline bool TypeInfo::isAbstract() const            { return (m_flagsAndSize & internal::flag_abstract) != 0; }
-inline bool TypeInfo::isPolymorphic() const         { return (m_flagsAndSize & internal::flag_polymorphic) != 0; }
-inline bool TypeInfo::hasSimpleConstructor() const  { return (m_flagsAndSize & internal::flag_simple_constructor) != 0; }
-inline bool TypeInfo::isReflected() const           { return (m_flagsAndSize & internal::flag_reflected) != 0; }
+inline size_t TypeInfo::size() const                { return m_size; }
+inline bool TypeInfo::isClass() const               { return (m_flags & internal::flag_class) != 0; }
+inline bool TypeInfo::isPOD() const                 { return (m_flags & internal::flag_pod) != 0; }
+inline bool TypeInfo::isAbstract() const            { return (m_flags & internal::flag_abstract) != 0; }
+inline bool TypeInfo::isPolymorphic() const         { return (m_flags & internal::flag_polymorphic) != 0; }
+inline bool TypeInfo::hasSimpleConstructor() const  { return (m_flags & internal::flag_simple_constructor) != 0; }
+inline bool TypeInfo::isReflected() const           { return (m_flags & internal::flag_reflected) != 0; }
 inline TypeInfo const* TypeInfo::base() const       { return m_base; }
 inline TypeInfo const* TypeInfo::next() const       { return m_next; }
 //-----------------------------------------------------------------------------
 
 inline uint32 FieldInfo::id() const                                             { return m_id; }
 inline char const* FieldInfo::name() const                                      { return m_name; }
+inline TypeInfo const* FieldInfo::type() const                                  { return m_type; }
 inline FieldInfo const* FieldInfo::next() const                                 { return m_next; }
 //-----------------------------------------------------------------------------
 
@@ -632,13 +654,20 @@ template<typename T> inline bool type_inspect<T>::isPOD()                       
 template<typename T> inline bool type_inspect<T>::isAbstract()                    { return __is_abstract(T); }
 template<typename T> inline bool type_inspect<T>::isPolymorphic()                 { return __is_polymorphic(T); }
 template<typename T> inline bool type_inspect<T>::hasSimpleConstructor()          { return internal::has_simple_constructor<T>::value; }
+template<typename T> inline TypeInfo const* type_inspect<T>::type()               { return &info; }
 template<typename T> inline void* type_inspect<T>::construct()                    { return info.construct(); }
 template<typename T> inline void* type_inspect<T>::constructArray(size_t count)   { return info.constructArray(count); }
 template<typename T> inline void type_inspect<T>::constructInPlace(void* ptr)     { info.constructInPlace(ptr); }
 template<typename T> inline void type_inspect<T>::destroy(void* ptr)              { info.destroy(ptr); }
 template<typename T> inline void type_inspect<T>::destroyArray(void* ptr)         { info.destroyArray(ptr); }
 template<typename T> inline void type_inspect<T>::destroyInPlace(void* ptr)       { info.destroyInPlace(ptr); }
-template<typename T> inline void type_inspect<T>::copy(void* dst, void const* src) { info.copy(dst, src); }
+template<typename T> inline void type_inspect<T>::copy(void* dst, void const* src)             { info.copy(dst, src); }
+template<typename T> inline FieldInfo const* type_inspect<T>::getField(uint32 id)              { return info.getField(id); }
+template<typename T> inline FieldInfo const* type_inspect<T>::getField(char const* name)       { return info.getField(name); }
+template<typename T> inline FieldInfo const* type_inspect<T>::getFirstField()                  { return info.getFirstField(); }
+template<typename T> inline FunctionInfo const* type_inspect<T>::getFunction(uint32 id)        { return info.getFunction(id); }
+template<typename T> inline FunctionInfo const* type_inspect<T>::getFunction(char const* name) { return info.getFunction(name); }
+template<typename T> inline FunctionInfo const* type_inspect<T>::getFirstFunction()            { return info.getFirstFunction(); }
 //-----------------------------------------------------------------------------
 
 template<typename T1,typename T2> struct is_same    { enum { value = false }; };

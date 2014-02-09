@@ -22,73 +22,72 @@ IN THE SOFTWARE.
 
 =============================================================================*/
 #include "unitos/unitos.h"
-#if 0
-#include "reflectos_lua.h"
+#include "reflectos.h"
+#include <string>
 
-namespace r = reflectos;
 //----------------------------------------------------------------------------
-
-namespace {
-
-void* allocate(void* userdata, void* ptr, size_t oldSize, size_t newSize)
+struct SubType
 {
-    userdata;
-    oldSize;
-    if(newSize == 0) {
-        ::free(ptr);
-        return nullptr;
-    }
-    return ::realloc(ptr, newSize);
-}
+    SubType() : m_float(0.0f) {}
 
-}
-//----------------------------------------------------------------------------
+    float m_float;
 
-class LuaClass
-{
-public:
-    LuaClass() : m_data(3) {}
-
-    void setData(int i) { m_data = i; }
-    int getData() const { return m_data; }
-    int one() const { return 1; }
-
-private:
-    int m_data;
-
-    REFLECT_CLASS(LuaClass)
-        REFLECT_FIELD(m_data)
-        REFLECT_FUNCTION(setData)
-        REFLECT_FUNCTION(getData)
-        REFLECT_FUNCTION(one)
+    REFLECT_CLASS(SubType)
+        REFLECT_FIELD(m_float)
     REFLECT_END()
 };
-
-REGISTER_CLASS(LuaClass)
+REGISTER_CLASS(SubType)
 //----------------------------------------------------------------------------
 
-struct LuaFixture : public unitos::SuiteTest
+class StoredClass
 {
-    LuaFixture()
-    {
-        L = lua_newstate(::allocate, nullptr);
-        r::LuaBinder luaBinder(L);
-        luaBinder.visitClass<LuaClass>();
-    }
+public:
+    StoredClass() : m_int(0), m_subType() {}
 
-    virtual ~LuaFixture()
-    {
-        lua_close(L);
-    }
+    int     m_int;
+    SubType m_subType;
 
-    lua_State* L;
+    REFLECT_CLASS(StoredClass)
+        REFLECT_FIELD(m_int)
+        REFLECT_FIELD(m_subType)
+    REFLECT_END()
 };
+REGISTER_CLASS(StoredClass)
+//----------------------------------------------------------------------------
 
-TEST_SUITE(Lua)
+class Store
 {
-    TEST_FIXTURE(LuaFixture,GetData)
+public:
+    template<typename T,typename F>
+    void visitField(const char* name, T const* object, F const* field)
     {
-        
+        name;
+        object;
+        if(r::type_inspect<F>::isPOD()) {
+            //printf("%s %s\n", r::type_inspect<F>::name(), name);
+        } else {
+            //printf("%s %s\n", r::type_inspect<F>::name(), name);
+            r::reflect(this, field);
+        }
+    }
+
+    template<typename T,typename funcptr_t,funcptr_t Function>
+    void visitFunction(const char* name, T const*) {}
+};
+//----------------------------------------------------------------------------
+
+REGISTER_TYPE(float)
+
+namespace r = reflectos;
+
+TEST_SUITE(Store)
+{
+    TEST(Test)
+    {
+        Store store;
+
+        StoredClass storedClass;
+
+        StoredClass::reflect(&store, &storedClass);
     }
 }
-#endif

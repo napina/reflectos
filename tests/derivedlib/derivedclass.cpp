@@ -1,31 +1,4 @@
-reflectos
-=========
-
-Small and fast reflection library for C++. Relies on decltype and partial template support.
-
-
-Features
-========
-- Type inspection
-  - Create/delete type
-  - Call functions
-  - Get function as fastdelegate or std::function
-- Extendable reflection with custom visitor
-  - Makes easy to write serialization code or add script language binding
-- Function parameter inspection
-
-
-Todo
-====
-- Finish field reflection
-- Proper virtual inheritance
-- Allow function override
-- Lua binder
-- Dynamic registry
-
-
-License
-=======
+/*=============================================================================
 
 Copyright (c) 2013 Ville Ruusutie
 
@@ -46,3 +19,40 @@ THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 IN THE SOFTWARE.
+
+=============================================================================*/
+#define BUILD_DERIVED_DLL
+#include "reflectos.h"
+#include "derivedclass.h"
+
+REGISTER_CLASS(SharedDerivedClass)
+
+// TODO
+REGISTER_TYPE(int)
+REGISTER_TYPE(float)
+REGISTER_CLASS(SharedBaseClass)
+
+SharedDerivedClass::~SharedDerivedClass()
+{
+    delete m_temp;
+}
+
+SharedDerivedClass::SharedDerivedClass()
+{
+    m_data = 5;
+    m_temp = new float(8.0f);
+}
+
+int SharedDerivedClass::test()
+{
+    return 77;
+}
+
+int SharedDerivedClass::foo()
+{
+    return 333;
+}
+
+reflectos::TypeInfo* getDerivedTypes() {
+    return reflectos::Registry::s_typeList;
+}

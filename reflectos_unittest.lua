@@ -6,8 +6,8 @@ project "reflectos_unittest"
 		"tests/*.h",
 		"tests/*.cpp",
 	}
-	includedirs { "include", "../unitos/include" }
-	links { "unitos" }
+	includedirs { "include", "baselib", "derivedlib", "../unitos/include" }
+	links { "reflectos_unittest_baselib", "reflectos_unittest_derivedlib", "unitos" }
 	objdir( "build/" .. _ACTION )
 	targetdir( "build/" .. _ACTION )
 	location( "build/" .. _ACTION )

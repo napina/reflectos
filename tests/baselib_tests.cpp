@@ -22,73 +22,53 @@ IN THE SOFTWARE.
 
 =============================================================================*/
 #include "unitos/unitos.h"
-#if 0
-#include "reflectos_lua.h"
+#include "reflectos.h"
+#include "baselib/baseclass.h"
 
 namespace r = reflectos;
-//----------------------------------------------------------------------------
 
-namespace {
-
-void* allocate(void* userdata, void* ptr, size_t oldSize, size_t newSize)
+TEST_SUITE(BaseLib)
 {
-    userdata;
-    oldSize;
-    if(newSize == 0) {
-        ::free(ptr);
-        return nullptr;
-    }
-    return ::realloc(ptr, newSize);
-}
-
-}
-//----------------------------------------------------------------------------
-
-class LuaClass
-{
-public:
-    LuaClass() : m_data(3) {}
-
-    void setData(int i) { m_data = i; }
-    int getData() const { return m_data; }
-    int one() const { return 1; }
-
-private:
-    int m_data;
-
-    REFLECT_CLASS(LuaClass)
-        REFLECT_FIELD(m_data)
-        REFLECT_FUNCTION(setData)
-        REFLECT_FUNCTION(getData)
-        REFLECT_FUNCTION(one)
-    REFLECT_END()
-};
-
-REGISTER_CLASS(LuaClass)
-//----------------------------------------------------------------------------
-
-struct LuaFixture : public unitos::SuiteTest
-{
-    LuaFixture()
+    TEST(Inspect)
     {
-        L = lua_newstate(::allocate, nullptr);
-        r::LuaBinder luaBinder(L);
-        luaBinder.visitClass<LuaClass>();
+        r::TypeInfo const* info = r::inspect("SharedBaseClass");
+        EXPECT_VALID(info);
+        EXPECT_EQUAL(info->name(), "SharedBaseClass");
+        EXPECT_FALSE(info->isPOD());
+        EXPECT_TRUE(info->isClass());
+        EXPECT_FALSE(info->isAbstract());
+        EXPECT_TRUE(info->isPolymorphic());
+        EXPECT_TRUE(info->hasSimpleConstructor());
+
+        EXPECT_VALID(info->getField("m_data"));
+        EXPECT_VALID(info->getFunction("getData"));
+        EXPECT_VALID(info->getFunction("test"));
     }
 
-    virtual ~LuaFixture()
+    TEST(Construct)
     {
-        lua_close(L);
+        r::TypeInfo const* info = r::inspect("SharedBaseClass");
+        EXPECT_VALID(info);
+        void* ptr = info->construct();
+        EXPECT_VALID(ptr);
+        info->destroy(ptr);
     }
 
-    lua_State* L;
-};
-
-TEST_SUITE(Lua)
-{
-    TEST_FIXTURE(LuaFixture,GetData)
+    TEST(ConstructArray)
     {
-        
+        r::TypeInfo const* info = r::inspect("SharedBaseClass");
+        EXPECT_VALID(info);
+        void* ptr = info->constructArray(3);
+        EXPECT_VALID(ptr);
+        info->destroyArray(ptr);
+    }
+
+    TEST(ConstructInplace)
+    {
+        r::TypeInfo const* info = r::inspect("SharedBaseClass");
+        EXPECT_VALID(info);
+        void* ptr = alloca(info->size());
+        info->constructInPlace(ptr);
+        info->destroyInPlace(ptr);
     }
 }
-#endif

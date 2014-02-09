@@ -1,31 +1,4 @@
-reflectos
-=========
-
-Small and fast reflection library for C++. Relies on decltype and partial template support.
-
-
-Features
-========
-- Type inspection
-  - Create/delete type
-  - Call functions
-  - Get function as fastdelegate or std::function
-- Extendable reflection with custom visitor
-  - Makes easy to write serialization code or add script language binding
-- Function parameter inspection
-
-
-Todo
-====
-- Finish field reflection
-- Proper virtual inheritance
-- Allow function override
-- Lua binder
-- Dynamic registry
-
-
-License
-=======
+/*=============================================================================
 
 Copyright (c) 2013 Ville Ruusutie
 
@@ -46,3 +19,39 @@ THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 IN THE SOFTWARE.
+
+=============================================================================*/
+#ifndef DERIVED_CLASS_H
+#define DERIVED_CLASS_H
+#include "baselib/baseclass.h"
+#include "reflectos.h"
+
+#ifdef BUILD_DERIVED_DLL
+#define DERIVED_DLL __declspec(dllexport)
+#else
+#define DERIVED_DLL __declspec(dllimport)
+#endif
+
+class SharedDerivedClass : public SharedBaseClass
+{
+public:
+    DERIVED_DLL virtual ~SharedDerivedClass();
+    DERIVED_DLL SharedDerivedClass();
+
+    DERIVED_DLL virtual int test();
+    DERIVED_DLL virtual int foo();
+
+public:
+    int m_extra;
+    float* m_temp;
+
+    REFLECT_VIRTUAL_CLASS(SharedDerivedClass, SharedBaseClass)
+        REFLECT_FIELD(m_extra)
+        REFLECT_FIELD(m_temp)
+        REFLECT_FUNCTION(foo)
+    REFLECT_END()
+};
+
+DERIVED_DLL reflectos::TypeInfo* getDerivedTypes();
+
+#endif
