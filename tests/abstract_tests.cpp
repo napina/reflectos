@@ -27,16 +27,32 @@ IN THE SOFTWARE.
 class AbstractClass
 {
 public:
-    AbstractClass() {}
+    virtual ~AbstractClass() {}
 
     virtual void setData(int i) = 0;
 
 private:
-    REFLECT_CLASS(AbstractClass)
+    REFLECT_ABSTRACT_CLASS(AbstractClass)
         REFLECT_FUNCTION(setData)
     REFLECT_END()
 };
 REGISTER_CLASS(AbstractClass)
+//----------------------------------------------------------------------------
+
+class DerivedFromAbstractClass : public AbstractClass
+{
+public:
+    virtual ~DerivedFromAbstractClass() {}
+
+    virtual void setData(int i) { m_i = i; }
+
+private:
+    int m_i;
+
+    REFLECT_DERIVED_CLASS(DerivedFromAbstractClass,AbstractClass)
+    REFLECT_END()
+};
+REGISTER_CLASS(DerivedFromAbstractClass)
 //----------------------------------------------------------------------------
 
 namespace r = reflectos;
@@ -56,8 +72,6 @@ TEST_SUITE(Abstract)
 
     TEST(Inspect)
     {
-        AbstractClass* obj = nullptr;
-
         r::TypeInfo const* info = r::inspect("AbstractClass");
         EXPECT_VALID(info);
         EXPECT_EQUAL(info->name(), "AbstractClass");
@@ -66,9 +80,22 @@ TEST_SUITE(Abstract)
         EXPECT_TRUE(info->isAbstract());
         EXPECT_TRUE(info->isPolymorphic());
         EXPECT_FALSE(info->hasSimpleConstructor());
+    }
 
-        EXPECT_VALID(r::inspect(obj));
-        EXPECT_EQUAL(r::inspect(obj), info);
+    TEST(InspectDerived)
+    {
+        r::TypeInfo const* info = r::inspect("DerivedFromAbstractClass");
+        EXPECT_VALID(info);
+        EXPECT_EQUAL(info->name(), "DerivedFromAbstractClass");
+        EXPECT_FALSE(info->isPOD());
+        EXPECT_TRUE(info->isClass());
+        EXPECT_FALSE(info->isAbstract());
+        EXPECT_TRUE(info->isPolymorphic());
+        EXPECT_TRUE(info->hasSimpleConstructor());
+
+        DerivedFromAbstractClass obj;
+        EXPECT_VALID(r::inspect(&obj));
+        EXPECT_EQUAL(r::inspect(&obj), info);
     }
 
     TEST(Construct)
@@ -85,10 +112,11 @@ TEST_SUITE(Abstract)
         r::inspect("AbstractClass")->destroyArray(ptr);
     }
 
-    TEST(ConstructInplace)
+    TODO_TEST(ConstructInplace)
     {
         void* ptr = alloca(r::inspect("AbstractClass")->size());
         r::inspect("AbstractClass")->constructInPlace(ptr);
         r::inspect("AbstractClass")->destroyInPlace(ptr);
+        reportFailure;
     }
 }

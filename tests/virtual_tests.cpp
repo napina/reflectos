@@ -36,7 +36,7 @@ public:
 protected:
     int m_data;
 
-    REFLECT_CLASS(BaseClass)
+    REFLECT_BASE_CLASS(BaseClass)
         REFLECT_FIELD(m_data)
         REFLECT_FUNCTION(getData)
         REFLECT_FUNCTION(test)
@@ -59,7 +59,7 @@ public:
     int* m_temp;
 
 private:
-    REFLECT_VIRTUAL_CLASS(DerivedClass,BaseClass)
+    REFLECT_DERIVED_CLASS(DerivedClass,BaseClass)
         REFLECT_FIELD(m_extra)
         REFLECT_FIELD(m_temp)
         REFLECT_FUNCTION(foo)
@@ -148,7 +148,7 @@ TEST_SUITE(Virtual)
         void* ptr = r::inspect("DerivedClass")->construct();
         EXPECT_VALID(ptr);
         BaseClass* basePtr = reinterpret_cast<BaseClass*>(ptr);
-        EXPECT_EQUAL(r::inspect(basePtr)->name(), r::type_inspect<DerivedClass>::name());
+        EXPECT_EQUAL(r::inspect(basePtr)->name(), "DerivedClass");
         EXPECT_EQUAL(r::inspect(basePtr)->id(), r::type_inspect<DerivedClass>::id());
         r::inspect("DerivedClass")->destroy(ptr);
     }

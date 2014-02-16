@@ -81,8 +81,8 @@ TEST_SUITE(Simple)
         EXPECT_TRUE( info->hasSimpleConstructor());
         EXPECT_VALID(info->getField("m_data"));
 
-        EXPECT_VALID(r::inspect(obj));
-        EXPECT_EQUAL(r::inspect(obj), info);
+        EXPECT_VALID(r::inspect(&obj));
+        EXPECT_EQUAL(r::inspect(&obj), info);
     }
 
     TEST(Construct)

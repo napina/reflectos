@@ -50,22 +50,24 @@ namespace internal {
     template<typename T> struct RegistryImpl;
 }
 typedef internal::RegistryImpl<void> Registry;
-typedef unsigned int uint32;
+typedef unsigned int uint32_t;
 //-----------------------------------------------------------------------------
 
-#define REFLECT_CLASS(NAME)                 REFLECT_CLASS_(NAME)
-#define REFLECT_VIRTUAL_CLASS(NAME,BASE)    REFLECT_VIRTUAL_CLASS_(NAME,BASE)
-#define REFLECT_FIELD(NAME)                 REFLECT_FIELD_(NAME)
-#define REFLECT_FUNCTION(NAME)              REFLECT_FUNCTION_(NAME)
-#define REFLECT_END()                       REFLECT_END_()
-#define REGISTER_CLASS(NAME)                REGISTER_CLASS_(NAME)
-#define REGISTER_TYPE(NAME)                 REGISTER_TYPE_(NAME)
+#define REFLECT_CLASS(NAME)                 XXX_REFLECT_CLASS_(NAME)
+#define REFLECT_BASE_CLASS(NAME)            XXX_REFLECT_BASE_CLASS_(NAME)
+#define REFLECT_ABSTRACT_CLASS(NAME)        XXX_REFLECT_ABSTRACT_CLASS_(NAME)
+#define REFLECT_DERIVED_CLASS(NAME,BASE)    XXX_REFLECT_DERIVED_CLASS_(NAME,BASE)
+#define REFLECT_FIELD(NAME)                 XXX_REFLECT_FIELD_(NAME)
+#define REFLECT_FUNCTION(NAME)              XXX_REFLECT_FUNCTION_(NAME)
+#define REFLECT_END()                       XXX_REFLECT_END_()
+#define REGISTER_CLASS(NAME)                XXX_REGISTER_CLASS_(NAME)
+#define REGISTER_TYPE(NAME)                 XXX_REGISTER_TYPE_(NAME)
 //-----------------------------------------------------------------------------
 
 struct TypeInfo
 {
     const char*     name() const;
-    uint32          id() const;
+    uint32_t        id() const;
     size_t          size() const;
     bool            isClass() const;
     bool            isPOD() const;
@@ -84,11 +86,11 @@ struct TypeInfo
     virtual void    destroyInPlace(void* ptr) const = 0;
     virtual void    copy(void* dst, void const* src) const = 0;
 
-    virtual FieldInfo const*    getField(uint32 id) const = 0;
+    virtual FieldInfo const*    getField(uint32_t id) const = 0;
     virtual FieldInfo const*    getField(const char* name) const = 0;
     virtual FieldInfo const*    getFirstField() const = 0;
 
-    virtual FunctionInfo const* getFunction(uint32 id) const = 0;
+    virtual FunctionInfo const* getFunction(uint32_t id) const = 0;
     virtual FunctionInfo const* getFunction(const char* name) const = 0;
     virtual FunctionInfo const* getFirstFunction() const = 0;
 
@@ -96,9 +98,9 @@ protected:
     friend Registry;
     virtual void init() = 0;
 
-    uint32 m_id;
-    uint32 m_size : 16;
-    uint32 m_flags : 16;
+    uint32_t m_id;
+    uint32_t m_size : 16;
+    uint32_t m_flags : 16;
     TypeInfo* m_next;
     TypeInfo* m_base;
     char const* m_name;
@@ -108,15 +110,15 @@ protected:
 
 struct FieldInfo
 {
-    uint32                      id() const;
-    uint32                      offset() const;
+    uint32_t                    id() const;
+    uint32_t                    offset() const;
     char const*                 name() const;
     TypeInfo const*             type() const;
     FieldInfo const*            next() const;
 
 public:
-    uint32 m_id;
-    uint32 m_offset;
+    uint32_t m_id;
+    uint32_t m_offset;
     TypeInfo* m_type;
     FieldInfo* m_next;
     char const* m_name;
@@ -131,7 +133,7 @@ struct FunctionInfo
 {
     typedef void (*PtrType)();
 
-    uint32                      id() const;
+    uint32_t                    id() const;
     char const*                 name() const;
     FunctionInfo const*         next() const;
 
@@ -157,7 +159,7 @@ protected:
     PtrType m_ptr;
     char const* m_name;
     FunctionInfo* m_next;
-    uint32 m_id;
+    uint32_t m_id;
     // TODO padding for 64bit architecture?
 };
 //-----------------------------------------------------------------------------
@@ -166,7 +168,7 @@ template<typename T>
 struct type_inspect : internal::TypeStorage<T, __is_class(T) >
 {
     static char const*      name();
-    static uint32           id();
+    static uint32_t           id();
     static size_t           size();
     static bool             isClass();
     static bool             isPOD();
@@ -183,11 +185,11 @@ struct type_inspect : internal::TypeStorage<T, __is_class(T) >
     static void             destroyInPlace(void* ptr);
     static void             copy(void* dst, void const* src);
 
-    static FieldInfo const*     getField(uint32 id);
+    static FieldInfo const*     getField(uint32_t id);
     static FieldInfo const*     getField(char const* name);
     static FieldInfo const*     getFirstField();
 
-    static FunctionInfo const*  getFunction(uint32 id);
+    static FunctionInfo const*  getFunction(uint32_t id);
     static FunctionInfo const*  getFunction(char const* name);
     static FunctionInfo const*  getFirstFunction();
 };
@@ -203,11 +205,11 @@ struct member_function_inspect;
 // Type, count, R, A, B, C,..
 //-----------------------------------------------------------------------------
 
-TypeInfo const* inspect(uint32 id);
+TypeInfo const* inspect(uint32_t id);
 TypeInfo const* inspect(char const* name);
 
 template<typename T>
-TypeInfo const* inspect(T const&);
+TypeInfo const* inspect(T const* ptr);
 
 template<typename Visitor,typename T>
 void reflect(Visitor* visitor, T const* obj);
@@ -218,9 +220,9 @@ void reflect(Visitor* visitor, T const* obj);
 
 namespace internal {
 
-inline uint32 fnv1a_hash(const char* str)
+inline uint32_t fnv1a_hash(const char* str)
 {
-    uint32 value = 2166136261U; // basis
+    uint32_t value = 2166136261U; // basis
     do {
         value ^= str[0];
         value *= 16777619u; // prime
@@ -229,15 +231,15 @@ inline uint32 fnv1a_hash(const char* str)
 }
 //-----------------------------------------------------------------------------
 
-struct true_type { enum { value = true }; };
-struct false_type { enum { value = false}; };
+struct true_type  { enum { value = true  }; };
+struct false_type { enum { value = false }; };
 
 template<typename T>
 struct has_simple_constructor
 {
-    template<typename C> static true_type test(int, decltype(C())* a = nullptr);
+    template<typename C> static true_type test(decltype(C())* a);
     template<typename> static false_type test(...);
-    typedef decltype(test<T>(0)) type;
+    typedef decltype(test<T>(nullptr)) type;
     static const bool value = type::value && !__is_abstract(T);
 };
 //----------------------------------------------------------------------------
@@ -245,27 +247,38 @@ struct has_simple_constructor
 template<typename T>
 struct has_base
 {
-    template<typename I> static true_type test(typename I::base_t* a = nullptr);
+    template<typename I> static true_type test(typename I::base_t* a);
     template<typename> static false_type test(...);
-    typedef decltype(test<T>((T*)nullptr)) type;
+    typedef decltype(test<T>(nullptr)) type;
     static const bool value = type::value;
 };
+
+template<typename T,bool Has> struct define_base    {};
+template<typename T> struct define_base<T,true>     { typedef type_inspect<typename T::base_t> base; };
+
+template<typename T,bool Has> struct get_base       { static TypeInfo* get() { return nullptr; } };
+template<typename T> struct get_base<T,true>        { static TypeInfo* get() { return (TypeInfo*)Registry::getType(type_inspect<typename T::base_t>::id()); } };
+//-----------------------------------------------------------------------------
+
+template<typename T>
+struct has_typeinfo
+{
+    template<typename I> static true_type test(decltype(&I::getTypeInfo)* a);
+    template<typename> static false_type test(...);
+    typedef decltype(test<T>(nullptr)) type;
+    static const bool value = type::value;
+};
+
+template<typename T,bool Has> struct get_typeinfo   { static TypeInfo const* get(T const* /*obj*/)    { return &type_inspect<T>::info; } };
+template<typename T> struct get_typeinfo<T,true>    { static TypeInfo const* get(T const* obj)        { return obj->getTypeInfo(); } };
 //----------------------------------------------------------------------------
-
-template<typename T,bool HasBase> struct define_base    {};
-template<typename T> struct define_base<T,true>         { typedef type_inspect<typename T::base_t> base; };
-//-----------------------------------------------------------------------------
-
-template<typename T,bool HasBase> struct get_base_info  { static TypeInfo* get() { return nullptr; } };
-template<typename T> struct get_base_info<T,true>       { static TypeInfo* get() { return (TypeInfo*)Registry::getType(type_inspect<typename T::base_t>::id()); } };
-//-----------------------------------------------------------------------------
 
 template<typename T>
 struct RegistryImpl
 {
     static TypeInfo* s_typeList;
 
-    static TypeInfo const* getType(uint32 id)
+    static TypeInfo const* getType(uint32_t id)
     {
         TypeInfo const* c = s_typeList;
         while(c != nullptr) {
@@ -406,15 +419,15 @@ struct TypeInfoImpl : public TypeInfo
     virtual void constructInPlace(void* ptr) const      { new (ptr) T(); }
     virtual void destroy(void* ptr) const               { delete static_cast<T*>(ptr); }
     virtual void destroyArray(void* ptr) const          { delete [] static_cast<T*>(ptr); }
-    virtual void destroyInPlace(void* ptr) const        { static_cast<T*>(ptr)->~T(); }
+    virtual void destroyInPlace(void* /*ptr*/) const    {}
     virtual void copy(void* dst, void const* src) const { *static_cast<T*>(dst) = *static_cast<T const*>(src); }
 
-    virtual FieldInfo const* getField(uint32 /*id*/) const          { return nullptr; }
+    virtual FieldInfo const* getField(uint32_t /*id*/) const        { return nullptr; }
     virtual FieldInfo const* getField(const char* /*name*/) const   { return nullptr; }
     virtual FieldInfo const* getFirstField() const                  { return nullptr; }
 
     virtual FunctionInfo const* getFirstFunction() const                { return nullptr; }
-    virtual FunctionInfo const* getFunction(uint32 /*id*/) const        { return nullptr; }
+    virtual FunctionInfo const* getFunction(uint32_t /*id*/) const      { return nullptr; }
     virtual FunctionInfo const* getFunction(const char* /*name*/) const { return nullptr; }
 
 protected:
@@ -472,7 +485,7 @@ struct ClassInfoImpl : public TypeInfo
 
     virtual FieldInfo const* getFirstField() const                  { return m_firstField; }
     virtual FieldInfo const* getField(const char* name) const       { return getField(fnv1a_hash(name)); }
-    virtual FieldInfo const* getField(uint32 id) const
+    virtual FieldInfo const* getField(uint32_t id) const
     {
         FieldInfo const* ite = m_firstField;
         while(ite != nullptr) {
@@ -485,7 +498,7 @@ struct ClassInfoImpl : public TypeInfo
 
     virtual FunctionInfo const* getFirstFunction() const            { return m_firstFunction; }
     virtual FunctionInfo const* getFunction(const char* name) const { return getFunction(fnv1a_hash(name)); }
-    virtual FunctionInfo const* getFunction(uint32 id) const
+    virtual FunctionInfo const* getFunction(uint32_t id) const
     {
         FunctionInfo const* ite = m_firstFunction;
         while(ite != nullptr) {
@@ -504,7 +517,7 @@ struct ClassInfoImpl : public TypeInfo
         info.m_id = fnv1a_hash(name);
         info.m_name = name;
         info.m_type = const_cast<TypeInfo*>(type_inspect<F>::type());
-        info.m_offset = (uint32)((ptrdiff_t)field - (ptrdiff_t)object);
+        info.m_offset = uint32_t((ptrdiff_t)field - (ptrdiff_t)object);
         info.m_next = m_firstField;
         m_firstField = &info;
     }
@@ -524,7 +537,7 @@ protected:
         if(isReflected())
             return;
 
-        m_base = get_base_info<T,has_base<T>::value>::get();
+        m_base = get_base<T,has_base<T>::value>::get();
         if(m_base) {
             Registry::init(m_base);
         }
@@ -561,37 +574,53 @@ struct TypeStorage<T,true> : public internal::define_base<T,internal::has_base<T
 
 //-----------------------------------------------------------------------------
 
-#define REFLECT_CLASS_(NAME)\
+#define XXX_REFLECT_CLASS_(NAME)\
     public:\
+        reflectos::TypeInfo const* getTypeInfo() const { return &reflectos::type_inspect<NAME>::info; }\
         template<typename Visitor>\
         static void reflect(Visitor* visitor, NAME const* c)\
         {\
             typedef NAME ThisType;
-#define REFLECT_VIRTUAL_CLASS_(NAME,BASE)\
+#define XXX_REFLECT_BASE_CLASS_(NAME)\
     public:\
+        virtual reflectos::TypeInfo const* getTypeInfo() const { return &reflectos::type_inspect<NAME>::info; }\
+        template<typename Visitor>\
+        static void reflect(Visitor* visitor, NAME const* c)\
+        {\
+            typedef NAME ThisType;
+#define XXX_REFLECT_ABSTRACT_CLASS_(NAME)\
+    public:\
+        virtual reflectos::TypeInfo const* getTypeInfo() const = 0;\
+        template<typename Visitor>\
+        static void reflect(Visitor* visitor, NAME const* c)\
+        {\
+            typedef NAME ThisType;
+#define XXX_REFLECT_DERIVED_CLASS_(NAME,BASE)\
+    public:\
+        virtual reflectos::TypeInfo const* getTypeInfo() const { return &reflectos::type_inspect<NAME>::info; }\
         typedef BASE base_t;\
         template<typename Visitor>\
         static void reflect(Visitor* visitor, NAME const* c)\
         {\
             typedef NAME ThisType;\
             BASE::reflect(visitor, c);
-#define REFLECT_FIELD_(NAME)\
+#define XXX_REFLECT_FIELD_(NAME)\
             visitor->visitField(#NAME, c, &c->NAME);
-#define REFLECT_FUNCTION_(NAME)\
+#define XXX_REFLECT_FUNCTION_(NAME)\
             visitor->visitFunction<ThisType,decltype(&ThisType::NAME),&ThisType::NAME>(#NAME, c);
-#define REFLECT_END_()\
+#define XXX_REFLECT_END_()\
         }
 
-#define REGISTER_CLASS_(NAME)\
+#define XXX_REGISTER_CLASS_(NAME)\
     reflectos::internal::ClassInfoImpl<NAME> reflectos::internal::TypeStorage<NAME,true>::info(#NAME);
 //-----------------------------------------------------------------------------
 
-#define REGISTER_TYPE_(NAME)\
+#define XXX_REGISTER_TYPE_(NAME)\
     reflectos::internal::TypeInfoImpl<NAME> reflectos::internal::TypeStorage<NAME,false>::info(#NAME);
 //-----------------------------------------------------------------------------
 
 inline const char* TypeInfo::name() const           { return m_name; }
-inline uint32 TypeInfo::id() const                  { return m_id; }
+inline uint32_t TypeInfo::id() const                { return m_id; }
 inline size_t TypeInfo::size() const                { return m_size; }
 inline bool TypeInfo::isClass() const               { return (m_flags & internal::flag_class) != 0; }
 inline bool TypeInfo::isPOD() const                 { return (m_flags & internal::flag_pod) != 0; }
@@ -603,13 +632,13 @@ inline TypeInfo const* TypeInfo::base() const       { return m_base; }
 inline TypeInfo const* TypeInfo::next() const       { return m_next; }
 //-----------------------------------------------------------------------------
 
-inline uint32 FieldInfo::id() const                                             { return m_id; }
+inline uint32_t FieldInfo::id() const                                           { return m_id; }
 inline char const* FieldInfo::name() const                                      { return m_name; }
 inline TypeInfo const* FieldInfo::type() const                                  { return m_type; }
 inline FieldInfo const* FieldInfo::next() const                                 { return m_next; }
 //-----------------------------------------------------------------------------
 
-inline uint32 FunctionInfo::id() const                                          { return m_id; }
+inline uint32_t FunctionInfo::id() const                                        { return m_id; }
 inline char const* FunctionInfo::name() const                                   { return m_name; }
 inline FunctionInfo const* FunctionInfo::next() const                           { return m_next; }
 
@@ -647,7 +676,7 @@ template<typename T> struct type_inspect<T*> : public type_inspect<T> {};
 template<typename T> struct type_inspect<const T*> : public type_inspect<T> {};
 
 template<typename T> inline char const* type_inspect<T>::name()                   { return info.name(); }
-template<typename T> inline uint32 type_inspect<T>::id()                          { return info.id(); }
+template<typename T> inline uint32_t type_inspect<T>::id()                        { return info.id(); }
 template<typename T> inline size_t type_inspect<T>::size()                        { return sizeof(T); }
 template<typename T> inline bool type_inspect<T>::isClass()                       { return __is_class(T); }
 template<typename T> inline bool type_inspect<T>::isPOD()                         { return __is_pod(T); }
@@ -662,10 +691,10 @@ template<typename T> inline void type_inspect<T>::destroy(void* ptr)            
 template<typename T> inline void type_inspect<T>::destroyArray(void* ptr)         { info.destroyArray(ptr); }
 template<typename T> inline void type_inspect<T>::destroyInPlace(void* ptr)       { info.destroyInPlace(ptr); }
 template<typename T> inline void type_inspect<T>::copy(void* dst, void const* src)             { info.copy(dst, src); }
-template<typename T> inline FieldInfo const* type_inspect<T>::getField(uint32 id)              { return info.getField(id); }
+template<typename T> inline FieldInfo const* type_inspect<T>::getField(uint32_t id)            { return info.getField(id); }
 template<typename T> inline FieldInfo const* type_inspect<T>::getField(char const* name)       { return info.getField(name); }
 template<typename T> inline FieldInfo const* type_inspect<T>::getFirstField()                  { return info.getFirstField(); }
-template<typename T> inline FunctionInfo const* type_inspect<T>::getFunction(uint32 id)        { return info.getFunction(id); }
+template<typename T> inline FunctionInfo const* type_inspect<T>::getFunction(uint32_t id)      { return info.getFunction(id); }
 template<typename T> inline FunctionInfo const* type_inspect<T>::getFunction(char const* name) { return info.getFunction(name); }
 template<typename T> inline FunctionInfo const* type_inspect<T>::getFirstFunction()            { return info.getFirstFunction(); }
 //-----------------------------------------------------------------------------
@@ -799,9 +828,9 @@ template<typename T,typename R,typename A,typename B,typename C,typename D,typen
 struct member_function_inspect<T,R(*)(A,B,C,D,E,F)> : public function_inspect<R(A,B,C,D,E,F)> { static const bool is_static = true; };
 //----------------------------------------------------------------------------
 
-template<typename T> inline TypeInfo const* inspect(T const&)   { return &type_inspect<T>::info; }
-template<> inline TypeInfo const* inspect(void* const&)         { return nullptr; }
-inline TypeInfo const* inspect(uint32 id)                       { return Registry::getType(id); }
+template<typename T> inline TypeInfo const* inspect(T const* p) { return internal::get_typeinfo<T,internal::has_typeinfo<T>::value>::get(p); }
+template<> inline TypeInfo const* inspect(void const*)          { return nullptr; }
+inline TypeInfo const* inspect(uint32_t id)                     { return Registry::getType(id); }
 inline TypeInfo const* inspect(char const* name)                { return Registry::getType(internal::fnv1a_hash(name)); }
 
 template<typename Visitor,typename T>

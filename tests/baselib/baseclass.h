@@ -34,8 +34,8 @@ IN THE SOFTWARE.
 class SharedBaseClass
 {
 public:
-    BASE_DLL virtual ~SharedBaseClass();
     BASE_DLL SharedBaseClass();
+    BASE_DLL virtual ~SharedBaseClass();
 
     BASE_DLL int getData();
     BASE_DLL virtual int test();
@@ -43,7 +43,7 @@ public:
 protected:
     int m_data;
 
-    REFLECT_CLASS(SharedBaseClass)
+    REFLECT_BASE_CLASS(SharedBaseClass)
         REFLECT_FIELD(m_data)
         REFLECT_FUNCTION(getData)
         REFLECT_FUNCTION(test)

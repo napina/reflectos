@@ -45,7 +45,7 @@ public:
     int m_extra;
     float* m_temp;
 
-    REFLECT_VIRTUAL_CLASS(SharedDerivedClass, SharedBaseClass)
+    REFLECT_DERIVED_CLASS(SharedDerivedClass, SharedBaseClass)
         REFLECT_FIELD(m_extra)
         REFLECT_FIELD(m_temp)
         REFLECT_FUNCTION(foo)

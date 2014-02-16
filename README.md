@@ -1,7 +1,7 @@
 reflectos
 =========
 
-Small and fast reflection library for C++. Relies on decltype and partial template support.
+Small and fast reflection library for C++. Relies on decltype and partial template support. Only one file to include.
 
 
 Features
@@ -10,18 +10,19 @@ Features
   - Create/delete type
   - Call functions
   - Get function as fastdelegate or std::function
+  - Field reflection
+  - Supports virtual inheritance
 - Extendable reflection with custom visitor
   - Makes easy to write serialization code or add script language binding
 - Function parameter inspection
+- Registry merge (for dll registrys)
 
 
 Todo
 ====
-- Finish field reflection
-- Proper virtual inheritance
+- Improve field reflection
 - Allow function override
 - Lua binder
-- Dynamic registry
 
 
 License
