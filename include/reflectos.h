@@ -240,7 +240,13 @@ struct has_simple_constructor
     template<typename C> static true_type test(decltype(C())* a);
     template<typename> static false_type test(...);
     typedef decltype(test<T>(nullptr)) type;
-    static const bool value = type::value && !__is_abstract(T);
+    static const bool value = type::value & !__is_abstract(T);
+};
+
+template<typename T>
+struct has_trivial_destructor
+{
+    static const bool value = __has_trivial_destructor(T) | __is_abstract(T);
 };
 //----------------------------------------------------------------------------
 
@@ -480,7 +486,7 @@ struct ClassInfoImpl : public TypeInfo
     virtual void constructInPlace(void* ptr) const      { constructClass<T,has_simple_constructor<T>::value>::inplace(ptr); }
     virtual void destroy(void* ptr) const               { delete static_cast<T*>(ptr); }
     virtual void destroyArray(void* ptr) const          { delete [] static_cast<T*>(ptr); }
-    virtual void destroyInPlace(void* ptr) const        { destructClass<T,__has_trivial_destructor(T)>::destroy(ptr); }
+    virtual void destroyInPlace(void* ptr) const        { destructClass<T,has_trivial_destructor<T>::value>::destroy(ptr); }
     virtual void copy(void* dst, void const* src) const { *static_cast<T*>(dst) = *static_cast<T const*>(src); }
 
     virtual FieldInfo const* getFirstField() const                  { return m_firstField; }

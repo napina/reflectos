@@ -112,11 +112,10 @@ TEST_SUITE(Abstract)
         r::inspect("AbstractClass")->destroyArray(ptr);
     }
 
-    TODO_TEST(ConstructInplace)
+    TEST(ConstructInplace)
     {
         void* ptr = alloca(r::inspect("AbstractClass")->size());
         r::inspect("AbstractClass")->constructInPlace(ptr);
         r::inspect("AbstractClass")->destroyInPlace(ptr);
-        reportFailure;
     }
 }
