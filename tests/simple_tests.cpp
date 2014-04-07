@@ -47,7 +47,7 @@ private:
         REFLECT_FUNCTION(one)
     REFLECT_END()
 };
-REGISTER_CLASS(SimpleClass)
+REGISTER_CLASS(SimpleClass, 0)
 //----------------------------------------------------------------------------
 
 REGISTER_TYPE(int)

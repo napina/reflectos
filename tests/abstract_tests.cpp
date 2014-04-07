@@ -36,7 +36,7 @@ private:
         REFLECT_FUNCTION(setData)
     REFLECT_END()
 };
-REGISTER_CLASS(AbstractClass)
+REGISTER_CLASS(AbstractClass, 0)
 //----------------------------------------------------------------------------
 
 class DerivedFromAbstractClass : public AbstractClass
@@ -52,7 +52,7 @@ private:
     REFLECT_DERIVED_CLASS(DerivedFromAbstractClass,AbstractClass)
     REFLECT_END()
 };
-REGISTER_CLASS(DerivedFromAbstractClass)
+REGISTER_CLASS(DerivedFromAbstractClass, 0)
 //----------------------------------------------------------------------------
 
 namespace r = reflectos;

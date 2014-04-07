@@ -26,7 +26,7 @@ IN THE SOFTWARE.
 #include "baseclass.h"
 
 REGISTER_TYPE(int)
-REGISTER_CLASS(SharedBaseClass)
+REGISTER_CLASS(SharedBaseClass, 0)
 
 SharedBaseClass::~SharedBaseClass()
 {

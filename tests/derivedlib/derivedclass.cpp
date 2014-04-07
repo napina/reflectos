@@ -25,12 +25,12 @@ IN THE SOFTWARE.
 #include "reflectos.h"
 #include "derivedclass.h"
 
-REGISTER_CLASS(SharedDerivedClass)
+REGISTER_CLASS(SharedDerivedClass, 0)
 
 // TODO
 REGISTER_TYPE(int)
 REGISTER_TYPE(float)
-REGISTER_CLASS(SharedBaseClass)
+REGISTER_CLASS(SharedBaseClass, 0)
 
 SharedDerivedClass::~SharedDerivedClass()
 {

@@ -36,7 +36,7 @@ struct SubType
         REFLECT_FIELD(m_float)
     REFLECT_END()
 };
-REGISTER_CLASS(SubType)
+REGISTER_CLASS(SubType, 0)
 //----------------------------------------------------------------------------
 
 class StoredClass
@@ -52,7 +52,7 @@ public:
         REFLECT_FIELD(m_subType)
     REFLECT_END()
 };
-REGISTER_CLASS(StoredClass)
+REGISTER_CLASS(StoredClass, 0)
 //----------------------------------------------------------------------------
 
 class Store

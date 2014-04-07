@@ -42,7 +42,7 @@ protected:
         REFLECT_FUNCTION(test)
     REFLECT_END()
 };
-REGISTER_CLASS(BaseClass)
+REGISTER_CLASS(BaseClass, 0)
 //----------------------------------------------------------------------------
 
 class DerivedClass : public BaseClass
@@ -65,7 +65,7 @@ private:
         REFLECT_FUNCTION(foo)
     REFLECT_END()
 };
-REGISTER_CLASS(DerivedClass)
+REGISTER_CLASS(DerivedClass, 0)
 //----------------------------------------------------------------------------
 
 namespace r = reflectos;

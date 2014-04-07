@@ -25,21 +25,14 @@ IN THE SOFTWARE.
 #ifndef REFLECTOS_H
 #define REFLECTOS_H
 
-#define REFLECTOS_USE_FASTDELEGATES
-
 #include <new>
-#ifdef REFLECTOS_USE_FASTDELEGATES
-#   define REFLECTOS_DELEGATE  FastDelegate
-#   pragma warning(disable: 4100)
-#   include "FastDelegate.h"
-#   pragma warning(default: 4100)
-#else
-#   define REFLECTOS_DELEGATE  std::function
-#   include <functional>
-#endif
+#pragma warning(disable: 4100)
+#include "FastDelegate.h"
+#pragma warning(default: 4100)
 
 namespace reflectos {
 
+using fastdelegate::FastDelegate;
 struct FieldInfo;
 struct FunctionInfo;
 template<typename T1,typename T2> struct is_same;
@@ -60,7 +53,7 @@ typedef unsigned int uint32_t;
 #define REFLECT_FIELD(NAME)                 XXX_REFLECT_FIELD_(NAME)
 #define REFLECT_FUNCTION(NAME)              XXX_REFLECT_FUNCTION_(NAME)
 #define REFLECT_END()                       XXX_REFLECT_END_()
-#define REGISTER_CLASS(NAME)                XXX_REGISTER_CLASS_(NAME)
+#define REGISTER_CLASS(NAME,VERSION)        XXX_REGISTER_CLASS_(NAME,VERSION)
 #define REGISTER_TYPE(NAME)                 XXX_REGISTER_TYPE_(NAME)
 //-----------------------------------------------------------------------------
 
@@ -68,6 +61,7 @@ struct TypeInfo
 {
     const char*     name() const;
     uint32_t        id() const;
+    uint32_t        version() const;
     size_t          size() const;
     bool            isClass() const;
     bool            isPOD() const;
@@ -100,7 +94,8 @@ protected:
 
     uint32_t m_id;
     uint32_t m_size : 16;
-    uint32_t m_flags : 16;
+    uint32_t m_flags : 8;
+    uint32_t m_version : 8;
     TypeInfo* m_next;
     TypeInfo* m_base;
     char const* m_name;
@@ -138,7 +133,7 @@ struct FunctionInfo
     FunctionInfo const*         next() const;
 
     template<typename Signature>
-    REFLECTOS_DELEGATE<Signature> asDelegate(void* obj) const;
+    FastDelegate<Signature> asDelegate(void* obj) const;
 
     template<typename R>
     R                           call(void* obj) const;
@@ -165,10 +160,10 @@ protected:
 //-----------------------------------------------------------------------------
 
 template<typename T>
-struct type_inspect : internal::TypeStorage<T, __is_class(T) >
+struct type_inspect : internal::TypeStorage<T,__is_class(T) & !__is_pod(T)>
 {
     static char const*      name();
-    static uint32_t           id();
+    static uint32_t         id();
     static size_t           size();
     static bool             isClass();
     static bool             isPOD();
@@ -202,7 +197,7 @@ struct function_inspect;
 
 template<typename T,typename Function>
 struct member_function_inspect;
-// Type, count, R, A, B, C,..
+// Type, returns, count, R, A, B, C,..
 //-----------------------------------------------------------------------------
 
 TypeInfo const* inspect(uint32_t id);
@@ -327,23 +322,13 @@ template<typename T>
 TypeInfo* RegistryImpl<T>::s_typeList = nullptr;
 //-----------------------------------------------------------------------------
 
-#ifdef REFLECTOS_USE_FASTDELEGATES
-#   define REFLECTOS_BIND0(P,FP) FastDelegate<R()>(P,FP)
-#   define REFLECTOS_BIND1(P,FP) FastDelegate<R(A)>(P,FP)
-#   define REFLECTOS_BIND2(P,FP) FastDelegate<R(A,B)>(P,FP)
-#   define REFLECTOS_BIND3(P,FP) FastDelegate<R(A,B,C)>(P,FP)
-#   define REFLECTOS_BIND4(P,FP) FastDelegate<R(A,B,C,D)>(P,FP)
-#   define REFLECTOS_BIND5(P,FP) FastDelegate<R(A,B,C,D,E)>(P,FP)
-#   define REFLECTOS_BIND6(P,FP) FastDelegate<R(A,B,C,D,E,F)>(P,FP)
-#else
-#   define REFLECTOS_BIND0(P,FP) std::bind(FP,P)
-#   define REFLECTOS_BIND1(P,FP) std::bind(FP,P,_1)
-#   define REFLECTOS_BIND2(P,FP) std::bind(FP,P,_1,_2)
-#   define REFLECTOS_BIND3(P,FP) std::bind(FP,P,_1,_2,_3)
-#   define REFLECTOS_BIND4(P,FP) std::bind(FP,P,_1,_2,_3,_4)
-#   define REFLECTOS_BIND5(P,FP) std::bind(FP,P,_1,_2,_3,_4,_5)
-#   define REFLECTOS_BIND6(P,FP) std::bind(FP,P,_1,_2,_3,_4,_5,_6)
-#endif
+#define REFLECTOS_BIND0(P,FP) FastDelegate<R()>(P,FP)
+#define REFLECTOS_BIND1(P,FP) FastDelegate<R(A)>(P,FP)
+#define REFLECTOS_BIND2(P,FP) FastDelegate<R(A,B)>(P,FP)
+#define REFLECTOS_BIND3(P,FP) FastDelegate<R(A,B,C)>(P,FP)
+#define REFLECTOS_BIND4(P,FP) FastDelegate<R(A,B,C,D)>(P,FP)
+#define REFLECTOS_BIND5(P,FP) FastDelegate<R(A,B,C,D,E)>(P,FP)
+#define REFLECTOS_BIND6(P,FP) FastDelegate<R(A,B,C,D,E,F)>(P,FP)
 //-----------------------------------------------------------------------------
 
 struct FunctionInfoImpl : public FunctionInfo
@@ -363,37 +348,37 @@ struct FunctionPtr;
 
 template<typename R>
 struct FunctionPtr<R(*)()> {
-    template<typename T,typename funcptr_t,funcptr_t Func> static REFLECTOS_DELEGATE<R()> ptr(void* ptr)            { return REFLECTOS_BIND0(static_cast<T*>(ptr), Func); }
+    template<typename T,typename funcptr_t,funcptr_t Func> static FastDelegate<R()> ptr(void* ptr)            { return REFLECTOS_BIND0(static_cast<T*>(ptr), Func); }
 };
 
 template<typename R,typename A>
 struct FunctionPtr<R(*)(A)> {
-    template<typename T,typename funcptr_t,funcptr_t Func> static REFLECTOS_DELEGATE<R(A)> ptr(void* ptr)           { return REFLECTOS_BIND1(static_cast<T*>(ptr), Func); }
+    template<typename T,typename funcptr_t,funcptr_t Func> static FastDelegate<R(A)> ptr(void* ptr)           { return REFLECTOS_BIND1(static_cast<T*>(ptr), Func); }
 };
 
 template<typename R,typename A,typename B>
 struct FunctionPtr<R(*)(A,B)> {
-    template<typename T,typename funcptr_t,funcptr_t Func> static REFLECTOS_DELEGATE<R(A,B)> ptr(void* ptr)         { return REFLECTOS_BIND2(static_cast<T*>(ptr), Func); }
+    template<typename T,typename funcptr_t,funcptr_t Func> static FastDelegate<R(A,B)> ptr(void* ptr)         { return REFLECTOS_BIND2(static_cast<T*>(ptr), Func); }
 };
 
 template<typename R,typename A,typename B,typename C>
 struct FunctionPtr<R(*)(A,B,C)> {
-    template<typename T,typename funcptr_t,funcptr_t Func> static REFLECTOS_DELEGATE<R(A,B,C)> ptr(void* ptr)       { return REFLECTOS_BIND3(static_cast<T*>(ptr), Func); }
+    template<typename T,typename funcptr_t,funcptr_t Func> static FastDelegate<R(A,B,C)> ptr(void* ptr)       { return REFLECTOS_BIND3(static_cast<T*>(ptr), Func); }
 };
 
 template<typename R,typename A,typename B,typename C,typename D>
 struct FunctionPtr<R(*)(A,B,C,D)> {
-    template<typename T,typename funcptr_t,funcptr_t Func> static REFLECTOS_DELEGATE<R(A,B,C,D)> ptr(void* ptr)     { return REFLECTOS_BIND4(static_cast<T*>(ptr), Func); }
+    template<typename T,typename funcptr_t,funcptr_t Func> static FastDelegate<R(A,B,C,D)> ptr(void* ptr)     { return REFLECTOS_BIND4(static_cast<T*>(ptr), Func); }
 };
 
 template<typename R,typename A,typename B,typename C,typename D,typename E>
 struct FunctionPtr<R(*)(A,B,C,D,E)> {
-    template<typename T,typename funcptr_t,funcptr_t Func> static REFLECTOS_DELEGATE<R(A,B,C,D,E)> ptr(void* ptr)   { return REFLECTOS_BIND5(static_cast<T*>(ptr), Func); }
+    template<typename T,typename funcptr_t,funcptr_t Func> static FastDelegate<R(A,B,C,D,E)> ptr(void* ptr)   { return REFLECTOS_BIND5(static_cast<T*>(ptr), Func); }
 };
 
 template<typename R,typename A,typename B,typename C,typename D,typename E,typename F>
 struct FunctionPtr<R(*)(A,B,C,D,E,F)> {
-    template<typename T,typename funcptr_t,funcptr_t Func> static REFLECTOS_DELEGATE<R(A,B,C,D,E,F)> ptr(void* ptr) { return REFLECTOS_BIND6(static_cast<T*>(ptr), Func); }
+    template<typename T,typename funcptr_t,funcptr_t Func> static FastDelegate<R(A,B,C,D,E,F)> ptr(void* ptr) { return REFLECTOS_BIND6(static_cast<T*>(ptr), Func); }
 };
 //-----------------------------------------------------------------------------
 
@@ -409,9 +394,10 @@ enum Flags {
 template<typename T>
 struct TypeInfoImpl : public TypeInfo
 {
-    static_assert(__is_class(T) == false, "Type is a class. You need to use REGISTER_CLASS for this");
+    static_assert(!__is_class(T) | __is_pod(T), "Type is a class. You need to use REGISTER_CLASS for this");
     TypeInfoImpl(char const* name) {
         m_id = fnv1a_hash(name);
+        m_version = 0;
         m_flags = flag_pod | flag_simple_constructor | flag_reflected;
         m_size = sizeof(T);
         m_name = name;
@@ -466,8 +452,9 @@ template<typename T>
 struct ClassInfoImpl : public TypeInfo
 {
     static_assert(__is_class(T) == true, "Type isn't a class. You need to use REGISTER_TYPE for this");
-    ClassInfoImpl(const char* name) {
+    ClassInfoImpl(const char* name, uint32_t version) {
         m_id = fnv1a_hash(name);
+        m_version = version;
         m_size = sizeof(T);
         m_flags = flag_class;
         m_flags |= __is_pod(T) ? flag_pod : 0;
@@ -518,7 +505,6 @@ struct ClassInfoImpl : public TypeInfo
     template<typename T,typename F>
     void visitField(const char* name, T const* object, F const* field)
     {
-        // TODO implement
         static FieldInfo info;
         info.m_id = fnv1a_hash(name);
         info.m_name = name;
@@ -617,8 +603,8 @@ struct TypeStorage<T,true> : public internal::define_base<T,internal::has_base<T
 #define XXX_REFLECT_END_()\
         }
 
-#define XXX_REGISTER_CLASS_(NAME)\
-    reflectos::internal::ClassInfoImpl<NAME> reflectos::internal::TypeStorage<NAME,true>::info(#NAME);
+#define XXX_REGISTER_CLASS_(NAME,VERSION)\
+    reflectos::internal::ClassInfoImpl<NAME> reflectos::internal::TypeStorage<NAME,true>::info(#NAME,VERSION);
 //-----------------------------------------------------------------------------
 
 #define XXX_REGISTER_TYPE_(NAME)\
@@ -627,6 +613,7 @@ struct TypeStorage<T,true> : public internal::define_base<T,internal::has_base<T
 
 inline const char* TypeInfo::name() const           { return m_name; }
 inline uint32_t TypeInfo::id() const                { return m_id; }
+inline uint32_t TypeInfo::version() const           { return m_version; }
 inline size_t TypeInfo::size() const                { return m_size; }
 inline bool TypeInfo::isClass() const               { return (m_flags & internal::flag_class) != 0; }
 inline bool TypeInfo::isPOD() const                 { return (m_flags & internal::flag_pod) != 0; }
@@ -649,7 +636,7 @@ inline char const* FunctionInfo::name() const                                   
 inline FunctionInfo const* FunctionInfo::next() const                           { return m_next; }
 
 template<typename Signature>
-inline REFLECTOS_DELEGATE<Signature> FunctionInfo::asDelegate(void* obj) const  { return reinterpret_cast<REFLECTOS_DELEGATE<Signature>(*)(void*)>(m_ptr)(obj); }
+inline FastDelegate<Signature> FunctionInfo::asDelegate(void* obj) const        { return reinterpret_cast<FastDelegate<Signature>(*)(void*)>(m_ptr)(obj); }
 
 template<typename R>
 inline R FunctionInfo::call(void* obj) const                                    { return asDelegate<R()>(obj)(); }
