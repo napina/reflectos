@@ -38,7 +38,6 @@ struct FunctionInfo;
 template<typename T1,typename T2> struct is_same;
 
 namespace internal {
-    template<typename T,bool IsClass> struct TypeStorage;
     template<typename T> struct type_inspect_base;
     template<typename T> struct RegistryImpl;
 }
@@ -120,10 +119,6 @@ public:
 };
 //-----------------------------------------------------------------------------
 
-#ifdef REFLECTOS_USE_FASTDELEGATES
-using fastdelegate::FastDelegate;
-#endif
-
 struct FunctionInfo
 {
     typedef void (*PtrType)();
@@ -160,7 +155,7 @@ protected:
 //-----------------------------------------------------------------------------
 
 template<typename T>
-struct type_inspect : internal::TypeStorage<T,__is_class(T) & !__is_pod(T)>
+struct type_inspect : public internal::type_inspect_base<T>
 {
     static char const*      name();
     static uint32_t         id();
@@ -206,8 +201,8 @@ TypeInfo const* inspect(char const* name);
 template<typename T>
 TypeInfo const* inspect(T const* ptr);
 
-template<typename Visitor,typename T>
-void reflect(Visitor* visitor, T const* obj);
+/*template<typename Visitor,typename T>
+void reflect(Visitor* visitor, T const* obj);*/
 
 //=============================================================================
 // Implementation starts here
@@ -544,8 +539,8 @@ private:
 };
 //-----------------------------------------------------------------------------
 
-template<typename T>
-struct TypeStorage<T,false>
+template<typename T,bool IsClass>
+struct TypeStorage
 {
     static TypeInfoImpl<T> info;
 
@@ -554,12 +549,18 @@ struct TypeStorage<T,false>
 };
 
 template<typename T>
-struct TypeStorage<T,true> : public internal::define_base<T,internal::has_base<T>::value>
+struct TypeStorage<T,true>
 {
     static ClassInfoImpl<T> info;
 
     template<typename Visitor,typename T>
     inline static void reflect(Visitor* visitor,T const* obj) { T::reflect(visitor, obj); };
+};
+//----------------------------------------------------------------------------
+
+template<typename T>
+struct type_inspect_base : public internal::define_base<T,internal::has_base<T>::value>
+{
 };
 
 } // end of internal
@@ -568,14 +569,14 @@ struct TypeStorage<T,true> : public internal::define_base<T,internal::has_base<T
 
 #define XXX_REFLECT_CLASS_(NAME)\
     public:\
-        reflectos::TypeInfo const* getTypeInfo() const { return &reflectos::type_inspect<NAME>::info; }\
+        reflectos::TypeInfo const* getTypeInfo() const { return reflectos::type_inspect<NAME>::type(); }\
         template<typename Visitor>\
         static void reflect(Visitor* visitor, NAME const* c)\
         {\
             typedef NAME ThisType;
 #define XXX_REFLECT_BASE_CLASS_(NAME)\
     public:\
-        virtual reflectos::TypeInfo const* getTypeInfo() const { return &reflectos::type_inspect<NAME>::info; }\
+        virtual reflectos::TypeInfo const* getTypeInfo() const { return reflectos::type_inspect<NAME>::type(); }\
         template<typename Visitor>\
         static void reflect(Visitor* visitor, NAME const* c)\
         {\
@@ -589,7 +590,7 @@ struct TypeStorage<T,true> : public internal::define_base<T,internal::has_base<T
             typedef NAME ThisType;
 #define XXX_REFLECT_DERIVED_CLASS_(NAME,BASE)\
     public:\
-        virtual reflectos::TypeInfo const* getTypeInfo() const { return &reflectos::type_inspect<NAME>::info; }\
+        virtual reflectos::TypeInfo const* getTypeInfo() const { return reflectos::type_inspect<NAME>::type(); }\
         typedef BASE base_t;\
         template<typename Visitor>\
         static void reflect(Visitor* visitor, NAME const* c)\
@@ -668,28 +669,28 @@ template<typename T> struct type_inspect<T&&> : public type_inspect<T> {};
 template<typename T> struct type_inspect<T*> : public type_inspect<T> {};
 template<typename T> struct type_inspect<const T*> : public type_inspect<T> {};
 
-template<typename T> inline char const* type_inspect<T>::name()                   { return info.name(); }
-template<typename T> inline uint32_t type_inspect<T>::id()                        { return info.id(); }
+template<typename T> inline char const* type_inspect<T>::name()                   { return type()->name(); }
+template<typename T> inline uint32_t type_inspect<T>::id()                        { return type()->id(); }
 template<typename T> inline size_t type_inspect<T>::size()                        { return sizeof(T); }
 template<typename T> inline bool type_inspect<T>::isClass()                       { return __is_class(T); }
 template<typename T> inline bool type_inspect<T>::isPOD()                         { return __is_pod(T); }
 template<typename T> inline bool type_inspect<T>::isAbstract()                    { return __is_abstract(T); }
 template<typename T> inline bool type_inspect<T>::isPolymorphic()                 { return __is_polymorphic(T); }
 template<typename T> inline bool type_inspect<T>::hasSimpleConstructor()          { return internal::has_simple_constructor<T>::value; }
-template<typename T> inline TypeInfo const* type_inspect<T>::type()               { return &info; }
-template<typename T> inline void* type_inspect<T>::construct()                    { return info.construct(); }
-template<typename T> inline void* type_inspect<T>::constructArray(size_t count)   { return info.constructArray(count); }
-template<typename T> inline void type_inspect<T>::constructInPlace(void* ptr)     { info.constructInPlace(ptr); }
-template<typename T> inline void type_inspect<T>::destroy(void* ptr)              { info.destroy(ptr); }
-template<typename T> inline void type_inspect<T>::destroyArray(void* ptr)         { info.destroyArray(ptr); }
-template<typename T> inline void type_inspect<T>::destroyInPlace(void* ptr)       { info.destroyInPlace(ptr); }
-template<typename T> inline void type_inspect<T>::copy(void* dst, void const* src)             { info.copy(dst, src); }
-template<typename T> inline FieldInfo const* type_inspect<T>::getField(uint32_t id)            { return info.getField(id); }
-template<typename T> inline FieldInfo const* type_inspect<T>::getField(char const* name)       { return info.getField(name); }
-template<typename T> inline FieldInfo const* type_inspect<T>::getFirstField()                  { return info.getFirstField(); }
-template<typename T> inline FunctionInfo const* type_inspect<T>::getFunction(uint32_t id)      { return info.getFunction(id); }
-template<typename T> inline FunctionInfo const* type_inspect<T>::getFunction(char const* name) { return info.getFunction(name); }
-template<typename T> inline FunctionInfo const* type_inspect<T>::getFirstFunction()            { return info.getFirstFunction(); }
+template<typename T> inline TypeInfo const* type_inspect<T>::type()               { return &internal::TypeStorage<T,__is_class(T) & !__is_pod(T)>::info; }
+template<typename T> inline void* type_inspect<T>::construct()                    { return type()->construct(); }
+template<typename T> inline void* type_inspect<T>::constructArray(size_t count)   { return type()->constructArray(count); }
+template<typename T> inline void type_inspect<T>::constructInPlace(void* ptr)     { type()->constructInPlace(ptr); }
+template<typename T> inline void type_inspect<T>::destroy(void* ptr)              { type()->destroy(ptr); }
+template<typename T> inline void type_inspect<T>::destroyArray(void* ptr)         { type()->destroyArray(ptr); }
+template<typename T> inline void type_inspect<T>::destroyInPlace(void* ptr)       { type()->destroyInPlace(ptr); }
+template<typename T> inline void type_inspect<T>::copy(void* dst, void const* src)             { type()->copy(dst, src); }
+template<typename T> inline FieldInfo const* type_inspect<T>::getField(uint32_t id)            { return type()->getField(id); }
+template<typename T> inline FieldInfo const* type_inspect<T>::getField(char const* name)       { return type()->getField(name); }
+template<typename T> inline FieldInfo const* type_inspect<T>::getFirstField()                  { return type()->getFirstField(); }
+template<typename T> inline FunctionInfo const* type_inspect<T>::getFunction(uint32_t id)      { return type()->getFunction(id); }
+template<typename T> inline FunctionInfo const* type_inspect<T>::getFunction(char const* name) { return type()->getFunction(name); }
+template<typename T> inline FunctionInfo const* type_inspect<T>::getFirstFunction()            { return type()->getFirstFunction(); }
 //-----------------------------------------------------------------------------
 
 template<typename T1,typename T2> struct is_same    { enum { value = false }; };
@@ -826,8 +827,8 @@ template<> inline TypeInfo const* inspect(void const*)          { return nullptr
 inline TypeInfo const* inspect(uint32_t id)                     { return Registry::getType(id); }
 inline TypeInfo const* inspect(char const* name)                { return Registry::getType(internal::fnv1a_hash(name)); }
 
-template<typename Visitor,typename T>
-inline void reflect(Visitor* visitor, T const* obj)             { type_inspect<T>::reflect(visitor, obj); }
+/*template<typename Visitor,typename T>
+inline void reflect(Visitor* visitor, T const* obj)             { type_inspect<T>::reflect(visitor, obj); }*/
 //----------------------------------------------------------------------------
 
 } // end of reflectos
