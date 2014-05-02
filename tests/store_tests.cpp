@@ -61,14 +61,20 @@ public:
     template<typename T,typename F>
     void visitField(const char* name, T const* object, F const* field)
     {
-        name;
-        object;
-        if(r::type_inspect<F>::isPOD()) {
-            //printf("%s %s\n", r::type_inspect<F>::name(), name);
-        } else {
-            //printf("%s %s\n", r::type_inspect<F>::name(), name);
-            r::reflect(this, field);
-        }
+        name, object;
+        F::reflect(this, field);
+    }
+
+    template<typename T>
+    void visitField(const char* name, T const* object, int const* field)
+    {
+        name, object, field;
+    }
+
+    template<typename T>
+    void visitField(const char* name, T const* object, float const* field)
+    {
+        name, object, field;
     }
 
     template<typename T,typename funcptr_t,funcptr_t Function>
