@@ -37,6 +37,7 @@ TEST_SUITE(DerivedLib)
         EXPECT_TRUE(info->isClass());
         EXPECT_FALSE(info->isAbstract());
         EXPECT_TRUE(info->isPolymorphic());
+        EXPECT_TRUE(info->isDerivedFrom("SharedBaseClass"));
         EXPECT_TRUE(info->hasSimpleConstructor());
         EXPECT_VALID(info->getField("m_data"));
         EXPECT_VALID(info->getField("m_extra"));

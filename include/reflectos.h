@@ -67,6 +67,8 @@ struct TypeInfo
     bool            isAbstract() const;
     bool            isPolymorphic() const;
     bool            isReflected() const;
+    bool            isDerivedFrom(uint32_t id) const;
+    bool            isDerivedFrom(char const* name) const;
     bool            hasSimpleConstructor() const;
     TypeInfo const* base() const;
     TypeInfo const* next() const;
@@ -165,6 +167,8 @@ struct type_inspect : public internal::type_inspect_base<T>
     static bool             isAbstract();
     static bool             isPolymorphic();
     static bool             hasSimpleConstructor();
+    static bool             isDerivedFrom(uint32_t id);
+    static bool             isDerivedFrom(char const* name);
     static TypeInfo const*  type();
 
     static void*            construct();
@@ -624,6 +628,23 @@ inline bool TypeInfo::hasSimpleConstructor() const  { return (m_flags & internal
 inline bool TypeInfo::isReflected() const           { return (m_flags & internal::flag_reflected) != 0; }
 inline TypeInfo const* TypeInfo::base() const       { return m_base; }
 inline TypeInfo const* TypeInfo::next() const       { return m_next; }
+
+inline bool TypeInfo::isDerivedFrom(uint32_t id) const {
+    TypeInfo const* type = m_base;
+    while(type != nullptr) {
+        if(type->id() == id)
+            return true;
+        type = type->base();
+    }
+    return false;
+}
+
+inline bool TypeInfo::isDerivedFrom(char const* name) const {
+    TypeInfo const* type = inspect(name);
+    if(type != nullptr)
+        return isDerivedFrom(type->id());
+    return false;
+}
 //-----------------------------------------------------------------------------
 
 inline uint32_t FieldInfo::id() const                                           { return m_id; }
@@ -676,6 +697,8 @@ template<typename T> inline bool type_inspect<T>::isClass()                     
 template<typename T> inline bool type_inspect<T>::isPOD()                         { return __is_pod(T); }
 template<typename T> inline bool type_inspect<T>::isAbstract()                    { return __is_abstract(T); }
 template<typename T> inline bool type_inspect<T>::isPolymorphic()                 { return __is_polymorphic(T); }
+template<typename T> inline bool type_inspect<T>::isDerivedFrom(uint32_t id)      { return type()->isDerivedFrom(id); }
+template<typename T> inline bool type_inspect<T>::isDerivedFrom(char const* name) { return type()->isDerivedFrom(name); }
 template<typename T> inline bool type_inspect<T>::hasSimpleConstructor()          { return internal::has_simple_constructor<T>::value; }
 template<typename T> inline TypeInfo const* type_inspect<T>::type()               { return &internal::TypeStorage<T,__is_class(T) & !__is_pod(T)>::info; }
 template<typename T> inline void* type_inspect<T>::construct()                    { return type()->construct(); }
