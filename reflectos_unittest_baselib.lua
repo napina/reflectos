@@ -10,6 +10,7 @@ project "reflectos_unittest_baselib"
 	links { }
 	objdir( "build/" .. _ACTION )
 	location( "build/" .. _ACTION )
+	targetname "%{prj.name}_%{cfg.platform}"
 
 	flags { "FatalWarnings", "NoBufferSecurityCheck", "NoEditAndContinue", "NoIncrementalLink", "NoPCH", "NoRTTI" }
 	warnings "Extra"
@@ -17,8 +18,10 @@ project "reflectos_unittest_baselib"
 	configuration "Debug"
 		defines { "DEBUG" }
 		flags { "Symbols" }
+		targetsuffix "_d"
 
 	configuration "Release"
 		defines { "NDEBUG" }
 		flags { "NoRuntimeChecks" }
 		optimize "Speed"
+		targetsuffix "_r"

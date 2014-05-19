@@ -9,8 +9,9 @@ project "reflectos_unittest"
 	includedirs { "include", "baselib", "derivedlib", "../unitos/include" }
 	links { "reflectos_unittest_baselib", "reflectos_unittest_derivedlib", "unitos" }
 	objdir( "build/" .. _ACTION )
-	targetdir( "build/" .. _ACTION )
 	location( "build/" .. _ACTION )
+	targetdir( "build/" .. _ACTION )
+	targetname "%{prj.name}_%{cfg.platform}"
 
 	flags { "FatalWarnings", "NoBufferSecurityCheck", "NoEditAndContinue", "NoIncrementalLink", "NoPCH", "NoRTTI" }
 	warnings "Extra"
@@ -18,11 +19,13 @@ project "reflectos_unittest"
 	configuration "Debug"
 		defines { "DEBUG" }
 		flags { "Symbols" }
+		targetsuffix "_d"
 
 	configuration "Release"
 		defines { "NDEBUG" }
 		flags { "NoRuntimeChecks" }
 		optimize "Speed"
+		targetsuffix "_r"
 
 	configuration { "vs*"}
 		postbuildcommands { "\"$(TargetPath)\"" }
