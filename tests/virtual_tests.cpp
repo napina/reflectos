@@ -167,4 +167,17 @@ TEST_SUITE(Virtual)
         EXPECT_FALSE(info->isAbstract());
         EXPECT_TRUE(info->isPolymorphic());
     }
+
+    TEST(CallOverriddenFunction)
+    {
+        DerivedClass clss;
+        BaseClass* obj = &clss;
+        r::TypeInfo const* info = r::inspect(obj);
+        EXPECT_VALID(info);
+        r::FunctionInfo const* functionInfo = info->getFunction("test");
+        EXPECT_VALID(functionInfo);
+        EXPECT_EQUAL(functionInfo->call<int>(obj), 77);
+        r::FastDelegate<int()> functionPtr = functionInfo->asDelegate<int()>(obj);
+        EXPECT_EQUAL(functionPtr(), 77);
+    }
 }
