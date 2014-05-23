@@ -23,7 +23,6 @@ IN THE SOFTWARE.
 =============================================================================*/
 #include "unitos/unitos.h"
 #include "reflectos.h"
-#include <malloc.h>
 
 using namespace fastdelegate;
 namespace r = reflectos;
@@ -116,13 +115,13 @@ TEST_SUITE(Simple)
         EXPECT_EQUAL(value, 98);
     }
 
-	TEST(CallSetData)
+    TEST(CallSetData)
     {
         SimpleClass c;
         r::FunctionInfo const* info = r::inspect("SimpleClass")->getFunction("setData");
         EXPECT_VALID(info);
         info->call<void,int>(&c,33);
-		EXPECT_EQUAL(c.getData(), 33);
+        EXPECT_EQUAL(c.getData(), 33);
     }
 
     TEST(CallOne)

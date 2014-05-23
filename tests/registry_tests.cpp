@@ -23,7 +23,6 @@ IN THE SOFTWARE.
 =============================================================================*/
 #include "unitos/unitos.h"
 #include "reflectos.h"
-#include <string>
 
 namespace r = reflectos;
 

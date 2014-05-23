@@ -28,7 +28,6 @@ IN THE SOFTWARE.
 
 #include <cstdio>
 #ifdef UNITOS_WINDOWS
-#   include <windows.h>
 #   ifndef NDEBUG
 #       include <crtdbg.h>
 #   endif
