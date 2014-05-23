@@ -16,7 +16,7 @@ project "reflectos_unittest_baselib"
 	warnings "Extra"
 
 	configuration "Debug"
-		defines { "DEBUG" }
+		defines { "DEBUG", "_ITERATOR_DEBUG_LEVEL=0" }
 		flags { "Symbols" }
 		targetsuffix "_d"
 

@@ -3,6 +3,7 @@ project "reflectos_unittest"
 	kind "ConsoleApp"
 	language "C++"
 	files {
+		"include/**.h",
 		"tests/*.h",
 		"tests/*.cpp",
 	}
@@ -17,7 +18,7 @@ project "reflectos_unittest"
 	warnings "Extra"
 
 	configuration "Debug"
-		defines { "DEBUG" }
+		defines { "DEBUG", "_ITERATOR_DEBUG_LEVEL=0" }
 		flags { "Symbols" }
 		targetsuffix "_d"
 
