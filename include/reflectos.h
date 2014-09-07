@@ -45,15 +45,19 @@ typedef internal::RegistryImpl<void> Registry;
 typedef unsigned int uint32_t;
 //-----------------------------------------------------------------------------
 
-#define REFLECT_CLASS(NAME)                 XXX_REFLECT_CLASS_(NAME)
-#define REFLECT_BASE_CLASS(NAME)            XXX_REFLECT_BASE_CLASS_(NAME)
-#define REFLECT_ABSTRACT_CLASS(NAME)        XXX_REFLECT_ABSTRACT_CLASS_(NAME)
-#define REFLECT_DERIVED_CLASS(NAME,BASE)    XXX_REFLECT_DERIVED_CLASS_(NAME,BASE)
-#define REFLECT_FIELD(NAME)                 XXX_REFLECT_FIELD_(NAME)
-#define REFLECT_FUNCTION(NAME)              XXX_REFLECT_FUNCTION_(NAME)
-#define REFLECT_END()                       XXX_REFLECT_END_()
-#define REGISTER_CLASS(NAME,VERSION)        XXX_REGISTER_CLASS_(NAME,VERSION)
-#define REGISTER_TYPE(NAME)                 XXX_REGISTER_TYPE_(NAME)
+#define REFLECT_CLASS(NAME,VERSION)              XXX_REFLECT_CLASS_(NAME,VERSION)
+#define REFLECT_BASE_CLASS(NAME,VERSION)         XXX_REFLECT_BASE_CLASS_(NAME,VERSION)
+#define REFLECT_ABSTRACT_CLASS(NAME,VERSION)     XXX_REFLECT_ABSTRACT_CLASS_(NAME,VERSION)
+#define REFLECT_DERIVED_CLASS(NAME,BASE,VERSION) XXX_REFLECT_DERIVED_CLASS_(NAME,BASE,VERSION)
+#define REFLECT_FIELD(NAME)                      XXX_REFLECT_FIELD_(NAME)
+#define REFLECT_FUNCTION(NAME)                   XXX_REFLECT_FUNCTION_(NAME)
+#define REFLECT_FUNCTION1(NAME,R,A)              XXX_REFLECT_FUNCTION1_(NAME,R,A)
+#define REFLECT_FUNCTION2(NAME,R,A,B)            XXX_REFLECT_FUNCTION2_(NAME,R,A,B)
+#define REFLECT_FUNCTION3(NAME,R,A,B,C)          XXX_REFLECT_FUNCTION3_(NAME,R,A,B,C)
+#define REFLECT_FUNCTION4(NAME,R,A,B,C,D)        XXX_REFLECT_FUNCTION4_(NAME,R,A,B,C,D)
+#define REFLECT_END()                            XXX_REFLECT_END_()
+#define REGISTER_CLASS(NAME)                     XXX_REGISTER_CLASS_(NAME)
+#define REGISTER_TYPE(NAME)                      XXX_REGISTER_TYPE_(NAME)
 //-----------------------------------------------------------------------------
 
 struct TypeInfo
@@ -161,6 +165,7 @@ struct type_inspect : public internal::type_inspect_base<T>
 {
     static char const*      name();
     static uint32_t         id();
+    static uint32_t         version();
     static size_t           size();
     static bool             isClass();
     static bool             isPOD();
@@ -451,9 +456,9 @@ template<typename T>
 struct ClassInfoImpl : public TypeInfo
 {
     static_assert(__is_class(T) == true, "Type isn't a class. You need to use REGISTER_TYPE for this");
-    ClassInfoImpl(const char* name, uint32_t version) {
+    ClassInfoImpl(const char* name) {
         m_id = fnv1a_hash(name);
-        m_version = version;
+        m_version = 0;
         m_size = sizeof(T);
         m_flags = flag_class;
         m_flags |= __is_pod(T) ? flag_pod : 0;
@@ -499,6 +504,12 @@ struct ClassInfoImpl : public TypeInfo
             ite = ite->next();
         }
         return nullptr;
+    }
+
+    template<typename T>
+    void setVersion(T const*, uint32_t version)
+    {
+        m_version = version;
     }
 
     template<typename T,typename F>
@@ -571,28 +582,31 @@ struct type_inspect_base : public internal::define_base<T,internal::has_base<T>:
 
 //-----------------------------------------------------------------------------
 
-#define XXX_REFLECT_CLASS_(NAME)\
+#define XXX_REFLECT_CLASS_(NAME,VERSION)\
     public:\
         reflectos::TypeInfo const* getTypeInfo() const { return reflectos::type_inspect<NAME>::type(); }\
         template<typename Visitor>\
         static void reflect(Visitor* visitor, NAME const* c)\
         {\
-            typedef NAME ThisType;
-#define XXX_REFLECT_BASE_CLASS_(NAME)\
+            typedef NAME ThisType;\
+            visitor->setVersion(c, VERSION);
+#define XXX_REFLECT_BASE_CLASS_(NAME,VERSION)\
     public:\
         virtual reflectos::TypeInfo const* getTypeInfo() const { return reflectos::type_inspect<NAME>::type(); }\
         template<typename Visitor>\
         static void reflect(Visitor* visitor, NAME const* c)\
         {\
-            typedef NAME ThisType;
-#define XXX_REFLECT_ABSTRACT_CLASS_(NAME)\
+            typedef NAME ThisType;\
+            visitor->setVersion(c, VERSION);
+#define XXX_REFLECT_ABSTRACT_CLASS_(NAME,VERSION)\
     public:\
         virtual reflectos::TypeInfo const* getTypeInfo() const = 0;\
         template<typename Visitor>\
         static void reflect(Visitor* visitor, NAME const* c)\
         {\
-            typedef NAME ThisType;
-#define XXX_REFLECT_DERIVED_CLASS_(NAME,BASE)\
+            typedef NAME ThisType;\
+            visitor->setVersion(c, VERSION);
+#define XXX_REFLECT_DERIVED_CLASS_(NAME,BASE,VERSION)\
     public:\
         virtual reflectos::TypeInfo const* getTypeInfo() const { return reflectos::type_inspect<NAME>::type(); }\
         typedef BASE base_t;\
@@ -600,16 +614,25 @@ struct type_inspect_base : public internal::define_base<T,internal::has_base<T>:
         static void reflect(Visitor* visitor, NAME const* c)\
         {\
             typedef NAME ThisType;\
-            BASE::reflect(visitor, c);
+            BASE::reflect(visitor, c);\
+            visitor->setVersion(c, VERSION);
 #define XXX_REFLECT_FIELD_(NAME)\
             visitor->visitField(#NAME, c, &c->NAME);
 #define XXX_REFLECT_FUNCTION_(NAME)\
             visitor->visitFunction<ThisType,decltype(&ThisType::NAME),&ThisType::NAME>(#NAME, c);
+#define XXX_REFLECT_FUNCTION1_(NAME,R,A)\
+            visitor->visitFunction<ThisType,R(ThisType::*)(A),&ThisType::NAME>(#NAME, c);
+#define XXX_REFLECT_FUNCTION2_(NAME,R,A,B)\
+            visitor->visitFunction<ThisType,R(ThisType::*)(A,B),&ThisType::NAME>(#NAME, c);
+#define XXX_REFLECT_FUNCTION3_(NAME,R,A,B,C,D)\
+            visitor->visitFunction<ThisType,R(ThisType::*)(A,B,C),&ThisType::NAME>(#NAME, c);
+#define XXX_REFLECT_FUNCTION4_(NAME,R,A,B,C,D)\
+            visitor->visitFunction<ThisType,R(ThisType::*)(A,B,C,D),&ThisType::NAME>(#NAME, c);
 #define XXX_REFLECT_END_()\
         }
 
-#define XXX_REGISTER_CLASS_(NAME,VERSION)\
-    reflectos::internal::ClassInfoImpl<NAME> reflectos::internal::TypeStorage<NAME,true>::info(#NAME,VERSION);
+#define XXX_REGISTER_CLASS_(NAME)\
+    reflectos::internal::ClassInfoImpl<NAME> reflectos::internal::TypeStorage<NAME,true>::info(#NAME);
 //-----------------------------------------------------------------------------
 
 #define XXX_REGISTER_TYPE_(NAME)\
@@ -692,6 +715,7 @@ template<typename T> struct type_inspect<const T*> : public type_inspect<T> {};
 
 template<typename T> inline char const* type_inspect<T>::name()                   { return type()->name(); }
 template<typename T> inline uint32_t type_inspect<T>::id()                        { return type()->id(); }
+template<typename T> inline uint32_t type_inspect<T>::version()                   { return type()->version(); }
 template<typename T> inline size_t type_inspect<T>::size()                        { return sizeof(T); }
 template<typename T> inline bool type_inspect<T>::isClass()                       { return __is_class(T); }
 template<typename T> inline bool type_inspect<T>::isPOD()                         { return __is_pod(T); }

@@ -9,9 +9,10 @@ Features
 - Type inspection
   - Create/delete type
   - Call functions
-  - Get function as fastdelegate or std::function
+  - Get function as fastdelegate
   - Field reflection
   - Supports virtual inheritance
+  - Version numbers
 - Extendable reflection with custom visitor
   - Makes easy to write serialization code or add script language binding
 - Function parameter inspection
@@ -21,7 +22,6 @@ Features
 Todo
 ====
 - Improve field reflection
-- Allow function override
 - Lua binder
 
 
