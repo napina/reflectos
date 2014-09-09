@@ -210,8 +210,8 @@ TypeInfo const* inspect(char const* name);
 template<typename T>
 TypeInfo const* inspect(T const* ptr);
 
-/*template<typename Visitor,typename T>
-void reflect(Visitor* visitor, T const* obj);*/
+template<typename Visitor,typename T>
+void reflect(Visitor* visitor, T const* obj);
 
 //=============================================================================
 // Implementation starts here
@@ -874,8 +874,8 @@ template<> inline TypeInfo const* inspect(void const*)          { return nullptr
 inline TypeInfo const* inspect(uint32_t id)                     { return Registry::getType(id); }
 inline TypeInfo const* inspect(char const* name)                { return Registry::getType(internal::fnv1a_hash(name)); }
 
-/*template<typename Visitor,typename T>
-inline void reflect(Visitor* visitor, T const* obj)             { type_inspect<T>::reflect(visitor, obj); }*/
+template<typename Visitor,typename T>
+inline void reflect(Visitor* visitor, T const* obj)             { internal::TypeStorage<T,__is_class(T) & !__is_pod(T)>::reflect(visitor, obj); }
 //----------------------------------------------------------------------------
 
 } // end of reflectos
