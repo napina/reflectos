@@ -249,6 +249,54 @@ struct has_trivial_destructor
 };
 //----------------------------------------------------------------------------
 
+    template<typename T>
+    struct RegistryImpl
+    {
+        static TypeInfo* s_typeList;
+        
+        static TypeInfo const* getType(uint32_t id)
+        {
+            TypeInfo const* c = s_typeList;
+            while(c != nullptr) {
+                if(c->id() == id)
+                    return c;
+                c = c->next();
+            }
+            return nullptr;
+        }
+        
+        static void init()
+        {
+            TypeInfo* c = s_typeList;
+            while(c != nullptr) {
+                c->init();
+                c = const_cast<TypeInfo*>(c->next());
+            }
+        }
+        
+        static void init(TypeInfo* type)
+        {
+            type->init();
+        }
+        
+        static void merge(TypeInfo* list)
+        {
+            TypeInfo* c = list;
+            while(c != nullptr) {
+                TypeInfo* next = const_cast<TypeInfo*>(c->next());
+                if(getType(c->id()) == nullptr) {
+                    c->m_next = s_typeList;
+                    s_typeList = c;
+                }
+                c = next;
+            }
+        }
+    };
+    
+    template<typename T>
+    TypeInfo* RegistryImpl<T>::s_typeList = nullptr;
+    //-----------------------------------------------------------------------------
+
 template<typename T>
 struct has_base
 {
@@ -277,54 +325,6 @@ struct has_typeinfo
 template<typename T,bool Has> struct get_typeinfo   { static TypeInfo const* get(T const* /*obj*/)    { return &type_inspect<T>::info; } };
 template<typename T> struct get_typeinfo<T,true>    { static TypeInfo const* get(T const* obj)        { return obj->getTypeInfo(); } };
 //----------------------------------------------------------------------------
-
-template<typename T>
-struct RegistryImpl
-{
-    static TypeInfo* s_typeList;
-
-    static TypeInfo const* getType(uint32_t id)
-    {
-        TypeInfo const* c = s_typeList;
-        while(c != nullptr) {
-            if(c->id() == id)
-                return c;
-            c = c->next();
-        }
-        return nullptr;
-    }
-
-    static void init()
-    {
-        TypeInfo* c = s_typeList;
-        while(c != nullptr) {
-            c->init();
-            c = const_cast<TypeInfo*>(c->next());
-        }
-    }
-
-    static void init(TypeInfo* type)
-    {
-        type->init();
-    }
-
-    static void merge(TypeInfo* list)
-    {
-        TypeInfo* c = list;
-        while(c != nullptr) {
-            TypeInfo* next = const_cast<TypeInfo*>(c->next());
-            if(getType(c->id()) == nullptr) {
-                c->m_next = s_typeList;
-                s_typeList = c;
-            }
-            c = next;
-        }
-    }
-};
-
-template<typename T>
-TypeInfo* RegistryImpl<T>::s_typeList = nullptr;
-//-----------------------------------------------------------------------------
 
 #define REFLECTOS_BIND0(P,FP) FastDelegate<R()>(P,FP)
 #define REFLECTOS_BIND1(P,FP) FastDelegate<R(A)>(P,FP)
@@ -506,14 +506,13 @@ struct ClassInfoImpl : public TypeInfo
         return nullptr;
     }
 
-    template<typename T>
     void setVersion(T const*, uint32_t version)
     {
         m_version = version;
     }
 
-    template<typename T,typename F>
-    void visitField(const char* name, T const* object, F const* field)
+    template<typename FT,typename F>
+    void visitField(const char* name, FT const* object, F const* field)
     {
         static FieldInfo info;
         info.m_id = fnv1a_hash(name);
@@ -524,11 +523,11 @@ struct ClassInfoImpl : public TypeInfo
         m_firstField = &info;
     }
 
-    template<typename T,typename funcptr_t,funcptr_t Function>
-    void visitFunction(const char* name, T const*)
+    template<typename FT,typename funcptr_t,funcptr_t Function>
+    void visitFunction(const char* name, FT const*)
     {
-        typedef member_function_inspect<T,funcptr_t> Inspection;
-        auto funcPtr = &(FunctionPtr<Inspection::Type>::ptr<T,funcptr_t,Function>);
+        typedef member_function_inspect<FT,funcptr_t> Inspection;
+        auto funcPtr = &(FunctionPtr<typename Inspection::Type>::template ptr<FT,funcptr_t,Function>);
         static FunctionInfoImpl info(name, FunctionInfo::PtrType(funcPtr), &m_firstFunction);
     }
 
@@ -559,8 +558,8 @@ struct TypeStorage
 {
     static TypeInfoImpl<T> info;
 
-    template<typename Visitor,typename T>
-    inline static void reflect(Visitor*,T const*) {};
+    template<typename Visitor,typename T2>
+    inline static void reflect(Visitor*,T2 const*) {};
 };
 
 template<typename T>
@@ -568,8 +567,8 @@ struct TypeStorage<T,true>
 {
     static ClassInfoImpl<T> info;
 
-    template<typename Visitor,typename T>
-    inline static void reflect(Visitor* visitor,T const* obj) { T::reflect(visitor, obj); };
+    template<typename Visitor,typename T2>
+    inline static void reflect(Visitor* visitor,T2 const* obj) { T2::reflect(visitor, obj); };
 };
 //----------------------------------------------------------------------------
 
@@ -743,56 +742,56 @@ template<typename T> inline FunctionInfo const* type_inspect<T>::getFirstFunctio
 template<typename T1,typename T2> struct is_same    { enum { value = false }; };
 template<typename T> struct is_same<T,T>            { enum { value = true }; };
 
-template<typename R>
-struct function_inspect<R()> {
-    typedef R(*Type)();
-    typedef R R;
-    static const bool returns = !is_same<R,void>::value;
+template<typename TR>
+struct function_inspect<TR()> {
+    typedef TR(*Type)();
+    typedef TR R;
+    static const bool returns = !is_same<TR,void>::value;
     static const int count = 0;
     static const bool is_global = false;
     static const bool is_static = false;
     static const bool is_const = false;
 };
 
-template<typename R,typename A>
-struct function_inspect<R(A)> : public function_inspect<R()> {
-    typedef R(*Type)(A);
-    typedef A A;
+template<typename R,typename TA>
+struct function_inspect<R(TA)> : public function_inspect<R()> {
+    typedef R(*Type)(TA);
+    typedef TA A;
     static const int count = 1;
 };
 
-template<typename R,typename A,typename B>
-struct function_inspect<R(A,B)> : public function_inspect<R(A)> {
-    typedef R(*Type)(A,B);
-    typedef B B;
+template<typename R,typename A,typename TB>
+struct function_inspect<R(A,TB)> : public function_inspect<R(A)> {
+    typedef R(*Type)(A,TB);
+    typedef TB B;
     static const int count = 2;
 };
 
-template<typename R,typename A,typename B,typename C>
-struct function_inspect<R(A,B,C)> : public function_inspect<R(A,B)> {
-    typedef R(*Type)(A,B,C);
-    typedef C C;
+template<typename R,typename A,typename B,typename TC>
+struct function_inspect<R(A,B,TC)> : public function_inspect<R(A,B)> {
+    typedef R(*Type)(A,B,TC);
+    typedef TC C;
     static const int count = 3;
 };
 
-template<typename R,typename A,typename B,typename C,typename D>
-struct function_inspect<R(A,B,C,D)> : public function_inspect<R(A,B,C)> {
-    typedef R(*Type)(A,B,C,D);
-    typedef D D;
+template<typename R,typename A,typename B,typename C,typename TD>
+struct function_inspect<R(A,B,C,TD)> : public function_inspect<R(A,B,C)> {
+    typedef R(*Type)(A,B,C,TD);
+    typedef TD D;
     static const int count = 4;
 };
 
-template<typename R,typename A,typename B,typename C,typename D,typename E>
-struct function_inspect<R(A,B,C,D,E)> : public function_inspect<R(A,B,C,D)> {
-    typedef R(*Type)(A,B,C,D,E);
-    typedef E E;
+template<typename R,typename A,typename B,typename C,typename D,typename TE>
+struct function_inspect<R(A,B,C,D,TE)> : public function_inspect<R(A,B,C,D)> {
+    typedef R(*Type)(A,B,C,D,TE);
+    typedef TE E;
     static const int count = 5;
 };
 
-template<typename R,typename A,typename B,typename C,typename D,typename E,typename F>
-struct function_inspect<R(A,B,C,D,E,F)> : public function_inspect<R(A,B,C,D,E)> {
-    typedef R(*Type)(A,B,C,D,E,F);
-    typedef F F;
+template<typename R,typename A,typename B,typename C,typename D,typename E,typename TF>
+struct function_inspect<R(A,B,C,D,E,TF)> : public function_inspect<R(A,B,C,D,E)> {
+    typedef R(*Type)(A,B,C,D,E,TF);
+    typedef TF F;
     static const int count = 6;
 };
 //----------------------------------------------------------------------------
